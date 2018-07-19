@@ -100,4 +100,49 @@ class Examity_Client_Admin {
 
 	}
 
+        public function define_admin_page(){
+                add_menu_page(
+                  __('Examity Client', 'examity-client'),
+                  __('Examity Client', 'examity-client'),
+                  'manage_options',
+                  'examity-client',
+                  array(&$this, 'examity_client_page_callback')
+                );
+        }
+        
+        public function examity_client_page_callback(){
+            include_once 'partials/examity-client-admin-display.php';
+        }
+        
+        public function register_setting(){
+            //$function = $this->option_name . '_general_line';
+            $callback = 'examity_client_api_url_element';
+            add_settings_section(
+                $this->option_name.'_general-section',
+                __( 'General', 'examity-client' ),
+                array( $this, $callback ),
+                $this->plugin_name
+            );
+        
+            add_settings_field(
+                $this->option_name . '_url',
+                __("Text box label:", 'examity-client'),
+                array( $this, $this->option_name . '_api_url_element' ),
+                $this->plugin_name,
+                $this->option_name.'_general-section',
+                array( 'label_for' => $this->option_name . '_url' )
+            );
+        
+            register_setting($this->option_name.'_general-section', $this->option_name . '_url');
+        }
+        
+        public function examity_client_general_line(){
+            echo '<p>' . __( 'Please change the settings accordingly.', 'outdated-notice' ) . '</p>';
+        }
+        
+        public function examity_client_api_url_element(){
+            $url = get_option( $this->option_name . '_url' );
+            echo '<input type="url" name="' . $this->option_name . '_url' . '" id="' . $this->option_name . '_url' . '" value="' . $url . '"> ' . __( 'url', 'examity-client' );
+        }
+
 }

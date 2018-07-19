@@ -14,3 +14,12 @@
 ?>
 
 <!-- This file should primarily consist of HTML with a little bit of PHP. -->
+<div class="wrap">
+    <h1><?php _e('Examity Client Settings', 'examity-client'); ?></h1>
+     <form action="options.php" method="post">
+<?php       
+settings_fields( $this->option_name );
+do_settings_sections( $this->option_name.'_general-section' );
+submit_button(); ?>             
+    </form>
+</div>
