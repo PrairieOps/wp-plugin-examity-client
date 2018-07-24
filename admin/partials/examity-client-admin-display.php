@@ -15,11 +15,12 @@
 
 <!-- This file should primarily consist of HTML with a little bit of PHP. -->
 <div class="wrap">
-    <h1><?php _e('Examity Client Settings', 'examity-client'); ?></h1>
-     <form action="options.php" method="post">
-<?php       
-settings_fields( $this->option_name );
-do_settings_sections( $this->option_name.'_general-section' );
-submit_button(); ?>             
+    <h2><?php echo esc_html( get_admin_page_title() ); ?></h2>
+    <form action="options.php" method="post">
+        <?php
+        settings_fields( $this->plugin_slug . '_general-section' );
+        do_settings_sections( $this->plugin_slug );
+        submit_button( 'Save Settings' );
+        ?>
     </form>
 </div>

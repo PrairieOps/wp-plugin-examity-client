@@ -101,12 +101,15 @@ class Examity_Client_Public {
 	}
 
         public function api_init() {
+                $base_uri = get_option( $this->plugin_slug . '_api_url' );
+                $timeout = get_option( $this->plugin_slug . '_api_timeout' );
                 $client = new Client([
                     // Base URI is used with relative requests
-                    'base_uri' => 'http://httpbin.org',
+                    'base_uri' => $base_uri,
                     // You can set any number of default request options.
-                    'timeout'  => 2.0,
+                    'timeout'  => $timeout,
                 ]);
+                return $client;
 	}
 
 }

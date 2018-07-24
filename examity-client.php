@@ -1,12 +1,12 @@
 <?php
 /**
-Plugin Name: Examity Client
-description: Enables Examity test proctoring within Wordpress.
-Version: 0.1
-Author: Jason Sherman
-License: GPLv2 or later
-Text Domain: examity-client
-*/
+ * Plugin Name: Examity Client
+ * description: Enables Examity test proctoring within Wordpress.
+ * Version: 0.1
+ * Author: Jason Sherman
+ * License: GPLv2 or later
+ * Text Domain: examity-client
+ */
 
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
