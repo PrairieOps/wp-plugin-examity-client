@@ -49,7 +49,7 @@ class Examity_Client_Public {
 	 */
 	public function __construct( $examity_client, $version ) {
 
-		$this->examity_client = $examity_client;
+		$this->plugin_name = $examity_client;
 		$this->version = $version;
 
 	}
@@ -73,7 +73,7 @@ class Examity_Client_Public {
 		 * class.
 		 */
 
-		wp_enqueue_style( $this->examity_client, plugin_dir_url( __FILE__ ) . 'css/examity-client-public.css', array(), $this->version, 'all' );
+		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/examity-client-public.css', array(), $this->version, 'all' );
 
 	}
 
@@ -96,20 +96,20 @@ class Examity_Client_Public {
 		 * class.
 		 */
 
-		wp_enqueue_script( $this->examity_client, plugin_dir_url( __FILE__ ) . 'js/examity-client-public.js', array( 'jquery' ), $this->version, false );
+		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/examity-client-public.js', array( 'jquery' ), $this->version, false );
 
 	}
 
         public function api_client() {
-                $base_uri = get_option( $this->plugin_slug . '_api_url' );
-                $timeout = get_option( $this->plugin_slug . '_api_timeout' );
+                $base_uri = get_option( $this->plugin_name . '_api_url' );
+                $timeout = get_option( $this->plugin_name . '_api_timeout' );
                 $client = new Client([
                     // Base URI is used with relative requests
                     'base_uri' => $base_uri,
                     // You can set any number of default request options.
                     'timeout'  => $timeout,
                     'headers' => [
-                        'User-Agent' => $this->plugin_slug . '/' . $this->version,
+                        'User-Agent' => $this->plugin_name . '/' . $this->version,
                         'Accept'     => 'application/json',
                         'Content-Type' => 'application/json',
                     ]
@@ -120,8 +120,8 @@ class Examity_Client_Public {
 
         public function api_access_token() {
                 $client = $this->api_client;
-                $client_id = get_option( $this->plugin_slug . '_api_client_id' );
-                $secret_key = get_option( $this->plugin_slug . '_api_secret_key' );
+                $client_id = get_option( $this->plugin_name . '_api_client_id' );
+                $secret_key = get_option( $this->plugin_name . '_api_secret_key' );
                 $response = $client->request([
                     'POST',
                     'examity/api/token',

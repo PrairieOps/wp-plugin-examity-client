@@ -72,7 +72,7 @@ class Examity_Client {
 		} else {
 			$this->version = '0.0.1';
 		}
-		$this->examity_client = 'examity-client';
+		$this->plugin_name = 'examity-client';
 
 		$this->load_dependencies();
 		$this->set_locale();
@@ -199,7 +199,7 @@ class Examity_Client {
 	 * @return    string    The name of the plugin.
 	 */
 	public function get_examity_client() {
-		return $this->examity_client;
+		return $this->plugin_name;
 	}
 
 	/**

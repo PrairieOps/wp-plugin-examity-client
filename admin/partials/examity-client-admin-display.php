@@ -18,8 +18,8 @@
     <h2><?php echo esc_html( get_admin_page_title() ); ?></h2>
     <form action="options.php" method="post">
         <?php
-        settings_fields( $this->plugin_slug . '_general-section' );
-        do_settings_sections( $this->plugin_slug );
+        settings_fields( $this->plugin_name . '_general-section' );
+        do_settings_sections( $this->plugin_name );
         submit_button( 'Save Settings' );
         ?>
     </form>
