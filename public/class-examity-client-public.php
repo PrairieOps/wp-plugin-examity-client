@@ -100,7 +100,7 @@ class Examity_Client_Public {
 
 	}
 
-        public function api_init() {
+        public function api_client() {
                 $base_uri = get_option( $this->plugin_slug . '_api_url' );
                 $timeout = get_option( $this->plugin_slug . '_api_timeout' );
                 $client = new Client([
@@ -108,8 +108,29 @@ class Examity_Client_Public {
                     'base_uri' => $base_uri,
                     // You can set any number of default request options.
                     'timeout'  => $timeout,
+                    'headers' => [
+                        'User-Agent' => $this->plugin_slug . '/' . $this->version,
+                        'Accept'     => 'application/json',
+                        'Content-Type' => 'application/json',
+                    ]
                 ]);
+
                 return $client;
 	}
+
+        public function api_access_token() {
+                $client = $this->api_client;
+                $client_id = get_option( $this->plugin_slug . '_api_client_id' );
+                $secret_key = get_option( $this->plugin_slug . '_api_secret_key' );
+                $response = $client->request([
+                    'POST',
+                    'examity/api/token',
+                    ['json' => [
+                        'clientID' => $client_id,
+                        'secretKey' => $secret_key,
+                    ]]
+                ]);
+                return $response;
+         }
 
 }

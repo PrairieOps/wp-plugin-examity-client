@@ -100,141 +100,96 @@ class Examity_Client_Admin {
 
     }
 
-        public function define_admin_page(){
-                add_menu_page(
-                  __('Examity Client', 'examity-client'),
-                  __('Examity Client', 'examity-client'),
-                  'manage_options',
-                  'examity-client',
-                  array(&$this, 'examity_client_page_callback')
-                );
-        }
-        
-        public function examity_client_page_callback(){
-            include_once 'partials/examity-client-admin-display.php';
-        }
-        
-        public function register_setting(){
-            add_settings_section(
-                $this->plugin_slug . '_general-section',
-                __( 'General', 'examity-client' ),
-                array( $this, $this->plugin_slug . '_general_line' ),
-                $this->plugin_slug
+    public function define_admin_page(){
+            add_menu_page(
+              __('Examity Client', 'examity-client'),
+              __('Examity Client', 'examity-client'),
+              'manage_options',
+              'examity-client',
+              array(&$this, 'examity_client_page_callback')
             );
-        
-            add_settings_field(
-                $this->plugin_slug . '_api_url',
-                __("API Endpoint URL:", 'examity-client'),
-                array( $this, 'examity_client_api_url_element' ),
-                $this->plugin_slug,
-                $this->plugin_slug . '_general-section',
-                array( 'label_for' => $this->plugin_slug . '_api_url' )
-            );
-        
-            register_setting($this->plugin_slug . '_general-section', $this->plugin_slug . '_api_url');
-        
-            add_settings_field(
-                $this->plugin_slug . '_api_timeout',
-                __("API Endpoint Timeout (seconds):", 'examity-client'),
-                array( $this, 'examity_client_api_timeout_element' ),
-                $this->plugin_slug,
-                $this->plugin_slug . '_general-section',
-                array( 'label_for' => $this->plugin_slug . '_api_timeout' )
-            );
-        
-            register_setting($this->plugin_slug . '_general-section', $this->plugin_slug . '_api_timeout');
+    }
+    
+    public function examity_client_page_callback(){
+        include_once 'partials/examity-client-admin-display.php';
+    }
+    
+    public function register_setting(){
+        add_settings_section(
+            $this->plugin_slug . '_general-section',
+            __( 'General', 'examity-client' ),
+            array( $this, $this->plugin_slug . '_general_line' ),
+            $this->plugin_slug
+        );
+    
+        add_settings_field(
+            $this->plugin_slug . '_api_url',
+            __("API Endpoint URL:", 'examity-client'),
+            array( $this, 'examity_client_api_url_element' ),
+            $this->plugin_slug,
+            $this->plugin_slug . '_general-section',
+            array( 'label_for' => $this->plugin_slug . '_api_url' )
+        );
+    
+        register_setting($this->plugin_slug . '_general-section', $this->plugin_slug . '_api_url');
+    
+        add_settings_field(
+            $this->plugin_slug . '_api_timeout',
+            __("API Endpoint Timeout (seconds):", 'examity-client'),
+            array( $this, 'examity_client_api_timeout_element' ),
+            $this->plugin_slug,
+            $this->plugin_slug . '_general-section',
+            array( 'label_for' => $this->plugin_slug . '_api_timeout' )
+        );
+    
+        register_setting($this->plugin_slug . '_general-section', $this->plugin_slug . '_api_timeout');
 
-            add_settings_field(
-                $this->plugin_slug . '_api_client_id',
-                __("API Client ID:", 'examity-client'),
-                array( $this, 'examity_client_api_client_id_element' ),
-                $this->plugin_slug,
-                $this->plugin_slug . '_general-section',
-                array( 'label_for' => $this->plugin_slug . '_api_client_id' )
-            );
+        add_settings_field(
+            $this->plugin_slug . '_api_client_id',
+            __("API Client ID:", 'examity-client'),
+            array( $this, 'examity_client_api_client_id_element' ),
+            $this->plugin_slug,
+            $this->plugin_slug . '_general-section',
+            array( 'label_for' => $this->plugin_slug . '_api_client_id' )
+        );
 
-            register_setting($this->plugin_slug . '_general-section', $this->plugin_slug . '_api_client_id');
+        register_setting($this->plugin_slug . '_general-section', $this->plugin_slug . '_api_client_id');
 
-            add_settings_field(
-                $this->plugin_slug . '_api_secret_key',
-                __("API Secret Key:", 'examity-client'),
-                array( $this, 'examity_client_api_secret_key_element' ),
-                $this->plugin_slug,
-                $this->plugin_slug . '_general-section',
-                array( 'label_for' => $this->plugin_slug . '_api_secret_key' )
-            );
+        add_settings_field(
+            $this->plugin_slug . '_api_secret_key',
+            __("API Secret Key:", 'examity-client'),
+            array( $this, 'examity_client_api_secret_key_element' ),
+            $this->plugin_slug,
+            $this->plugin_slug . '_general-section',
+            array( 'label_for' => $this->plugin_slug . '_api_secret_key' )
+        );
 
-            register_setting($this->plugin_slug . '_general-section', $this->plugin_slug . '_api_secret_key');       
+        register_setting($this->plugin_slug . '_general-section', $this->plugin_slug . '_api_secret_key');       
 
-        }
+    }
  
-        public function examity_client_general_line(){
-            echo '<p>' . __( 'Please change the settings accordingly.', 'outdated-notice' ) . '</p>';
-        }
-        
-        public function examity_client_api_url_element(){
-            $url = get_option( $this->plugin_slug . '_api_url' );
-            echo '<input type="url" name="' . $this->plugin_slug . '_api_url' . '" id="' . $this->plugin_slug . '_api_url' . '" value="' . $url . '"> ';
-        }
+    public function examity_client_general_line(){
+        echo '<p>' . __( 'Please change the settings accordingly.', 'outdated-notice' ) . '</p>';
+    }
+    
+    public function examity_client_api_url_element(){
+        $url = get_option( $this->plugin_slug . '_api_url' );
+        echo '<input type="url" name="' . $this->plugin_slug . '_api_url' . '" id="' . $this->plugin_slug . '_api_url' . '" value="' . $url . '"> ';
+    }
 
-        public function examity_client_api_timeout_element(){
-            $timeout = get_option( $this->plugin_slug . '_api_timeout' );
-            echo '<input type="number" name="' . $this->plugin_slug . '_api_timeout' . '" id="' . $this->plugin_slug . '_api_timeout' . '" value="' . $timeout . '"> ';
-        }
+    public function examity_client_api_timeout_element(){
+        $timeout = get_option( $this->plugin_slug . '_api_timeout' );
+        echo '<input type="number" name="' . $this->plugin_slug . '_api_timeout' . '" id="' . $this->plugin_slug . '_api_timeout' . '" value="' . $timeout . '"> ';
+    }
 
-        public function examity_client_api_client_id_element(){
-            $client_id = get_option( $this->plugin_slug . '_api_client_id' );
-            echo '<input type="text" name="' . $this->plugin_slug . '_api_client_id' . '" id="' . $this->plugin_slug . '_api_client_id' . '" value="' . $client_id . '"> ';
-        }
+    public function examity_client_api_client_id_element(){
+        $client_id = get_option( $this->plugin_slug . '_api_client_id' );
+        echo '<input type="text" name="' . $this->plugin_slug . '_api_client_id' . '" id="' . $this->plugin_slug . '_api_client_id' . '" value="' . $client_id . '"> ';
+    }
 
-        public function examity_client_api_secret_key_element(){
-            $secret_key = get_option( $this->plugin_slug . '_api_secret_key' );
-            echo '<input type="text" name="' . $this->plugin_slug . '_api_secret_key' . '" id="' . $this->plugin_slug . '_api_secret_key' . '" value="' . $secret_key . '"> ';
-        }
-
-        public function define_admin_page(){
-                add_menu_page(
-                  __('Examity Client', 'examity-client'),
-                  __('Examity Client', 'examity-client'),
-                  'manage_options',
-                  'examity-client',
-                  array(&$this, 'examity_client_page_callback')
-                );
-        }
-        
-        public function examity_client_page_callback(){
-            include_once 'partials/examity-client-admin-display.php';
-        }
-        
-        public function register_setting(){
-            //$function = $this->option_name . '_general_line';
-            $callback = 'examity_client_api_url_element';
-            add_settings_section(
-                $this->option_name.'_general-section',
-                __( 'General', 'examity-client' ),
-                array( $this, $callback ),
-                $this->plugin_name
-            );
-        
-            add_settings_field(
-                $this->option_name . '_url',
-                __("Text box label:", 'examity-client'),
-                array( $this, $this->option_name . '_api_url_element' ),
-                $this->plugin_name,
-                $this->option_name.'_general-section',
-                array( 'label_for' => $this->option_name . '_url' )
-            );
-        
-            register_setting($this->option_name.'_general-section', $this->option_name . '_url');
-        }
-        
-        public function examity_client_general_line(){
-            echo '<p>' . __( 'Please change the settings accordingly.', 'outdated-notice' ) . '</p>';
-        }
-        
-        public function examity_client_api_url_element(){
-            $url = get_option( $this->option_name . '_url' );
-            echo '<input type="url" name="' . $this->option_name . '_url' . '" id="' . $this->option_name . '_url' . '" value="' . $url . '"> ' . __( 'url', 'examity-client' );
-        }
-
+    public function examity_client_api_secret_key_element(){
+        $secret_key = get_option( $this->plugin_slug . '_api_secret_key' );
+        echo '<input type="text" name="' . $this->plugin_slug . '_api_secret_key' . '" id="' . $this->plugin_slug . '_api_secret_key' . '" value="' . $secret_key . '"> ';
+    }
+    
 }
