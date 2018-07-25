@@ -274,15 +274,13 @@ class Examity_Client {
                         'secretKey' => $secret_key,
                     ]]
                 );
-                $body = (string) json_decode($response->GetBody(), true);
-                return $body;
+                $decoded_response = json_decode($response->GetBody(), false);
+                return $decoded_response->authInfo->access_token;
                 } catch (RequestException $e) {
                     $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
                     error_log($requestExceptionMessage);
-                    echo $requestExceptionMessage;
                 } catch (\Exception $e) {
                     error_log($e);
-                    echo $e;
                 }
          }
 
