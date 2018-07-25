@@ -20,6 +20,7 @@
  * @subpackage Examity_Client/public
  * @author     Jason Sherman <jsn.sherman@gmail.com>
  */
+
 class Examity_Client_Public {
 
 	/**
@@ -99,38 +100,4 @@ class Examity_Client_Public {
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/examity-client-public.js', array( 'jquery' ), $this->version, false );
 
 	}
-
-        public function api_client() {
-                $base_uri = get_option( $this->plugin_name . '_api_url' );
-                $timeout = get_option( $this->plugin_name . '_api_timeout' );
-                $client = new Client([
-                    // Base URI is used with relative requests
-                    'base_uri' => $base_uri,
-                    // You can set any number of default request options.
-                    'timeout'  => $timeout,
-                    'headers' => [
-                        'User-Agent' => $this->plugin_name . '/' . $this->version,
-                        'Accept'     => 'application/json',
-                        'Content-Type' => 'application/json',
-                    ]
-                ]);
-
-                return $client;
-	}
-
-        public function api_access_token() {
-                $client = $this->api_client;
-                $client_id = get_option( $this->plugin_name . '_api_client_id' );
-                $secret_key = get_option( $this->plugin_name . '_api_secret_key' );
-                $response = $client->request([
-                    'POST',
-                    'examity/api/token',
-                    ['json' => [
-                        'clientID' => $client_id,
-                        'secretKey' => $secret_key,
-                    ]]
-                ]);
-                return $response;
-         }
-
 }

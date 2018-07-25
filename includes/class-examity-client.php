@@ -27,6 +27,15 @@
  * @subpackage Examity_Client/includes
  * @author     Jason Sherman <jsn.sherman@gmail.com>
  */
+
+// Declare guzzle stuff.
+use GuzzleHttp\Client;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
+use GuzzleHttp\MessageFormatter;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
 class Examity_Client {
 
 	/**
@@ -221,5 +230,60 @@ class Examity_Client {
 	public function get_version() {
 		return $this->version;
 	}
+
+        public function api_client() {
+
+                $stack = HandlerStack::create();
+                $logger = new Logger('Logger');
+                $logger->pushHandler(new StreamHandler(dirname( __FILE__ ) . '/debug.log'), Logger::DEBUG);
+                $stack->push(
+                    Middleware::log(
+                        $logger,
+                        new MessageFormatter('{req_body} - {res_body}')
+                    )
+                );
+
+                $base_uri = get_option( $this->plugin_name . '_api_url' );
+                $timeout = get_option( $this->plugin_name . '_api_timeout' );
+                $client = new Client([
+                    // log requests.
+                    'handler' => $stack,
+                    // Base URI is used with relative requests
+                    'base_uri' => $base_uri,
+                    // You can set any number of default request options.
+                    'timeout'  => $timeout,
+                    'headers' => [
+                        'User-Agent' => $this->plugin_name . '/' . $this->version,
+                        'Content-Type' => 'application/json',
+                    ]
+                ]);
+
+                return $client;
+        }
+
+        public function api_access_token() {
+                $client = $this->api_client();
+                $client_id = get_option( $this->plugin_name . '_api_client_id' );
+                $secret_key = get_option( $this->plugin_name . '_api_secret_key' );
+                try {
+                $response = $client->request(
+                    'POST',
+                    'examity/api/token',
+                    ['json' => [
+                        'clientID' => $client_id,
+                        'secretKey' => $secret_key,
+                    ]]
+                );
+                $body = (string) json_decode($response->GetBody(), true);
+                return $body;
+                } catch (RequestException $e) {
+                    $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
+                    error_log($requestExceptionMessage);
+                    echo $requestExceptionMessage;
+                } catch (\Exception $e) {
+                    error_log($e);
+                    echo $e;
+                }
+         }
 
 }
