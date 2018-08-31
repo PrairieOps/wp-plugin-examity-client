@@ -172,6 +172,7 @@ class Examity_Client {
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
                 $this->loader->add_action( 'admin_menu', $plugin_admin, 'define_admin_page' );
                 $this->loader->add_action( 'admin_init', $plugin_admin, 'register_setting' );
+                $this->loader->add_action( 'admin_init', $this, 'api_access_token' );
 
 	}
 
@@ -262,25 +263,42 @@ class Examity_Client {
         }
 
         public function api_access_token() {
-                $client = $this->api_client();
-                $client_id = get_option( $this->plugin_name . '_api_client_id' );
-                $secret_key = get_option( $this->plugin_name . '_api_secret_key' );
-                try {
-                $response = $client->request(
-                    'POST',
-                    'examity/api/token',
-                    ['json' => [
-                        'clientID' => $client_id,
-                        'secretKey' => $secret_key,
-                    ]]
-                );
-                $decoded_response = json_decode($response->GetBody(), false);
-                return $decoded_response->authInfo->access_token;
-                } catch (RequestException $e) {
-                    $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
-                    error_log($requestExceptionMessage);
-                } catch (\Exception $e) {
-                    error_log($e);
+
+                // Try to pull the token from options.
+                $api_access_token = get_option( $this->plugin_name . '_api_access_token' );
+
+                // Return it if it's there.
+                if($api_access_token) {
+                    return $api_access_token;
+                // Otherwise post credentials to get a token. 
+                } else {
+                    $client = $this->api_client();
+                    $client_id = get_option( $this->plugin_name . '_api_client_id' );
+                    $secret_key = get_option( $this->plugin_name . '_api_secret_key' );
+                    try {
+                    $response = $client->request(
+                        'POST',
+                        'examity/api/token',
+                        ['json' => [
+                            'clientID' => $client_id,
+                            'secretKey' => $secret_key,
+                        ]]
+                    );
+
+                    $decoded_response = json_decode($response->GetBody(), false);
+                    $api_access_token = $decoded_response->authInfo->access_token;
+
+                    // Update the option with the current token.
+                    update_option( $this->plugin_name . '_api_access_token', $api_access_token );
+
+                    // Return the current token.
+                    return $api_access_token;
+                    } catch (RequestException $e) {
+                        $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
+                        error_log($requestExceptionMessage);
+                    } catch (\Exception $e) {
+                        error_log($e);
+                    }
                 }
          }
 
