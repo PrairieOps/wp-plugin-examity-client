@@ -173,6 +173,7 @@ class Examity_Client {
                 $this->loader->add_action( 'admin_menu', $plugin_admin, 'define_admin_page' );
                 $this->loader->add_action( 'admin_init', $plugin_admin, 'register_setting' );
                 $this->loader->add_action( 'admin_init', $this, 'api_access_token' );
+                $this->loader->add_action( 'admin_init', $this, 'api_user' );
 
 	}
 
@@ -189,6 +190,7 @@ class Examity_Client {
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
+                $this->loader->add_action( 'init', $this, 'api_access_token' );
 
 	}
 
@@ -278,7 +280,7 @@ class Examity_Client {
                     try {
                     $response = $client->request(
                         'POST',
-                        'examity/api/token',
+                        'token',
                         ['json' => [
                             'clientID' => $client_id,
                             'secretKey' => $secret_key,
@@ -301,5 +303,28 @@ class Examity_Client {
                     }
                 }
          }
+
+         public function api_user() {
+
+             $api_access_token = $this->api_access_token();
+             $client = $this->api_client();
+             try {
+             $response = $client->request(
+                 'GET',
+                 'user',
+                 ['headers' => [
+                     'Authorization' => $api_access_token,
+                 ]]
+             );
+             // Return the response.
+             return $response;
+             } catch (RequestException $e) {
+                 $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
+                 error_log($requestExceptionMessage);
+             } catch (\Exception $e) {
+                 error_log($e);
+             }
+         }
+
 
 }
