@@ -246,8 +246,8 @@ class Examity_Client {
                     )
                 );
 
-                $base_uri = get_option( $this->plugin_name . '_api_url' );
-                $timeout = get_option( $this->plugin_name . '_api_timeout' );
+                $base_uri = get_option( $this->plugin_name . '_api_url', 'http://localhost/changeme' );
+                $timeout = get_option( $this->plugin_name . '_api_timeout', '1' );
                 $client = new Client([
                     // log requests.
                     'handler' => $stack,
@@ -275,8 +275,8 @@ class Examity_Client {
                 // Otherwise post credentials to get a token. 
                 } else {
                     $client = $this->api_client();
-                    $client_id = get_option( $this->plugin_name . '_api_client_id' );
-                    $secret_key = get_option( $this->plugin_name . '_api_secret_key' );
+                    $client_id = get_option( $this->plugin_name . '_api_client_id', 'changeme' );
+                    $secret_key = get_option( $this->plugin_name . '_api_secret_key', 'changeme' );
                     try {
                     $response = $client->request(
                         'POST',
