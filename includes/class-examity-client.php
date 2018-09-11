@@ -267,7 +267,7 @@ class Examity_Client {
         public function api_access_token() {
 
                 // @TODO write a function to test the validity of the token in storage
-                delete_option( $this->plugin_name . '_api_access_token' );
+                //delete_option( $this->plugin_name . '_api_access_token' );
 
                 // Try to pull the token from options.
                 $api_access_token = get_option( $this->plugin_name . '_api_access_token' );
@@ -307,8 +307,29 @@ class Examity_Client {
                 }
          }
 
+         public function api_user_del( $current_user ) {
+            $api_access_token = $this->api_access_token();
+            $client = $this->api_client();
+
+            try {
+                $response = $client->request(
+                    'DELETE',
+                    'user/' . $current_user->user_email,
+                    ['headers' => [
+                        'Authorization' => $api_access_token,
+                    ]]
+                );
+
+                return $response;
+             } catch (RequestException $e) {
+                 $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
+                 error_log($requestExceptionMessage);
+             } catch (\Exception $e) {
+                 error_log($e);
+             }
+         }
+
          public function api_user_reg( $current_user ) {
-            //$current_user = wp_get_current_user();
 
             $api_access_token = $this->api_access_token();
             $client = $this->api_client();
@@ -316,7 +337,7 @@ class Examity_Client {
                 'userId' => $current_user->user_email,
                 'firstName' => $current_user->user_firstname,
                 'lastName' => $current_user->user_lastname,
-                'emailAddress' => $current_user->user_email,
+                'emailAddress' => $current_user->user_email
             ];
             //error_log(json_encode($json));
 
@@ -357,11 +378,16 @@ class Examity_Client {
                      );
 
                      $decoded_response = json_decode($response->GetBody(), false);
-                     $message = $decoded_response->message;
 
-                     if ($message == 'User details not found.') {
+                     if ($decoded_response->message == 'User details not found.') {
                          // register the user if they don't exist
                          $this->api_user_reg( $current_user );
+                     // Obviously this is debugging behavior to drop.
+                     } elseif ($decoded_response->userInfo->userId == $current_user->user_email) {
+                         // print the user details to the page.
+                         echo print_r($decoded_response->userInfo);
+                         // delete the user.
+                         $this->api_user_del( $current_user );
                      } else {
                          // Return the response.
                          return $response;
