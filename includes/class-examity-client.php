@@ -191,6 +191,7 @@ class Examity_Client {
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
                 $this->loader->add_action( 'init', $this, 'api_access_token' );
                 $this->loader->add_action( 'the_post', $this, 'api_user_info' );
+                $this->loader->add_action( 'the_post', $this, 'api_course_create' );
 
 	}
 
@@ -401,5 +402,44 @@ class Examity_Client {
              }
          }
 
+         public function api_course_create( $post_object ) {
+
+            $api_access_token = $this->api_access_token();
+            $client = $this->api_client();
+
+            // @TODO replace with actual logic to query course instructor.
+            $instructor = wp_get_current_user();
+
+            $courseId = get_current_blog_id() . '_'  . $post_object->ID;
+
+            $json = [
+                'courseId' => $courseId,
+                'courseName' => $post_object->post_name,
+                'userId' => $instructor->user_email,
+                'firstName' => $instructor->user_firstname,
+                'lastName' => $instructor->user_lastname,
+                'emailAddress' => $instructor->user_email
+            ];
+            print_r(json_encode($json));
+
+            try {
+                $response = $client->request(
+                    'POST',
+                    'course',
+                    ['headers' => [
+                        'Authorization' => $api_access_token,
+                    ]],
+                    ['json' => $json]
+                );
+
+                return $response;
+             } catch (RequestException $e) {
+                 $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
+                 error_log($requestExceptionMessage);
+             } catch (\Exception $e) {
+                 error_log($e);
+             }
+
+         }
 
 }
