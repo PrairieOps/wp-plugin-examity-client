@@ -329,7 +329,7 @@ class Examity_Client {
              }
          }
 
-         public function api_user_reg( $current_user ) {
+         public function api_user_create( $current_user ) {
 
             $api_access_token = $this->api_access_token();
             $client = $this->api_client();
@@ -381,13 +381,13 @@ class Examity_Client {
 
                      if ($decoded_response->message == 'User details not found.') {
                          // register the user if they don't exist
-                         $this->api_user_reg( $current_user );
+                         $this->api_user_create( $current_user );
                      // Obviously this is debugging behavior to drop.
                      } elseif ($decoded_response->userInfo->userId == $current_user->user_email) {
                          // print the user details to the page.
                          echo print_r($decoded_response->userInfo);
                          // delete the user.
-                         $this->api_user_del( $current_user );
+                         //$this->api_user_del( $current_user );
                      } else {
                          // Return the response.
                          return $response;
