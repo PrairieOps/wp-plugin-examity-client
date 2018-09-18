@@ -32,6 +32,7 @@
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
+use GuzzleHttp\Psr7;
 use GuzzleHttp\MessageFormatter;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
@@ -346,10 +347,10 @@ class Examity_Client {
                 $response = $client->request(
                     'POST',
                     'user',
+                    ['json' => $json],
                     ['headers' => [
                         'Authorization' => $api_access_token,
-                    ]],
-                    ['json' => $json]
+                    ]]
                 );
 
                 return $response;
@@ -384,7 +385,8 @@ class Examity_Client {
                          // register the user if they don't exist
                          $this->api_user_create( $current_user );
                      // Obviously this is debugging behavior to drop.
-                     } elseif ($decoded_response->userInfo->userId == $current_user->user_email) {
+                     //} elseif ($decoded_response->userInfo->userId == $current_user->user_email) {
+                     } elseif ($decoded_response == $current_user->user_email) {
                          // print the user details to the page.
                          echo print_r($decoded_response->userInfo);
                          // delete the user.
@@ -412,6 +414,9 @@ class Examity_Client {
 
             $courseId = get_current_blog_id() . '_'  . $post_object->ID;
 
+            $headers = [
+                'Authorization' => $api_access_token,
+            ];
             $json = [
                 'courseId' => $courseId,
                 'courseName' => $post_object->post_name,
@@ -420,17 +425,16 @@ class Examity_Client {
                 'lastName' => $instructor->user_lastname,
                 'emailAddress' => $instructor->user_email
             ];
-            print_r(json_encode($json));
+            $body = Psr7\stream_for(json_encode($json));
 
-            try {
-                $response = $client->request(
+            $request = new Psr7\Request(
                     'POST',
                     'course',
-                    ['headers' => [
-                        'Authorization' => $api_access_token,
-                    ]],
-                    ['json' => $json]
-                );
+                    $headers
+            );
+
+            try {
+                $response = $client->send($request->withBody($body));
 
                 return $response;
              } catch (RequestException $e) {
