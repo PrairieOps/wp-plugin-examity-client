@@ -268,8 +268,15 @@ class Examity_Client {
 
         public function api_access_token() {
 
-                // @TODO write a function to test the validity of the token in storage
-                //delete_option( $this->plugin_name . '_api_access_token' );
+                // If the current access token is more than 30 minutes old, get a new one.
+                $api_access_token_timestamp = get_option( $this->plugin_name . '_api_access_token_timestamp', '1969-12-31T11:59:59Z' );
+                $now = new DateTime('NOW');
+                $api_access_token_datetime = new DateTime($api_access_token_timestamp);
+                $diff = $now->diff($api_access_token_datetime)->format('%i');
+
+                if($diff > 30) {
+                    delete_option( $this->plugin_name . '_api_access_token' );
+                }
 
                 // Try to pull the token from options.
                 $api_access_token = get_option( $this->plugin_name . '_api_access_token' );
@@ -294,9 +301,11 @@ class Examity_Client {
 
                     $decoded_response = json_decode($response->GetBody(), false);
                     $api_access_token = $decoded_response->authInfo->access_token;
+                    $api_access_token_timestamp = $decoded_response->timeStamp;
 
                     // Update the option with the current token.
                     update_option( $this->plugin_name . '_api_access_token', $api_access_token );
+                    update_option( $this->plugin_name . '_api_access_token_timestamp', $api_access_token_timestamp );
 
                     // Return the current token.
                     return $api_access_token;

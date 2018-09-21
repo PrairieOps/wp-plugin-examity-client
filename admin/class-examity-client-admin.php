@@ -164,7 +164,7 @@ class Examity_Client_Admin {
             array( 'label_for' => $this->plugin_name . '_api_secret_key' )
         );
 
-        register_setting($this->plugin_name . '_general-section', $this->plugin_name . '_api_secret_key');       
+        register_setting($this->plugin_name . '_general-section', $this->plugin_name . '_api_secret_key');
 
         add_settings_field(
             $this->plugin_name . '_api_access_token',
@@ -175,7 +175,18 @@ class Examity_Client_Admin {
             array( 'label_for' => $this->plugin_name . '_api_access_token' )
         );
 
-        register_setting($this->plugin_name . '_general-section', $this->plugin_name . '_api_secret_key');       
+        register_setting($this->plugin_name . '_general-section', $this->plugin_name . '_api_access_token');
+
+        add_settings_field(
+            $this->plugin_name . '_api_access_token_timestamp',
+            __("API Access Token Timestamp:", 'examity-client'),
+            array( $this, 'examity_client_api_access_token_timestamp_element' ),
+            $this->plugin_name,
+            $this->plugin_name . '_general-section',
+            array( 'label_for' => $this->plugin_name . '_api_access_token_timestamp' )
+        );
+
+        register_setting($this->plugin_name . '_general-section', $this->plugin_name . '_api_access_token_timestamp');
     }
  
     public function examity_client_general_line(){
@@ -205,6 +216,11 @@ class Examity_Client_Admin {
     public function examity_client_api_access_token_element(){
         $access_token = get_option( $this->plugin_name . '_api_access_token' );
         echo '<input type="text" name="' . $this->plugin_name . '_api_access_token' . '" id="' . $this->plugin_name . '_api_access_token' . '" value="' . $access_token . '" readonly> ';
+    }
+
+    public function examity_client_api_access_token_timestamp_element(){
+        $access_token_timestamp = get_option( $this->plugin_name . '_api_access_token_timestamp' );
+        echo '<input type="text" name="' . $this->plugin_name . '_api_access_token_timestamp' . '" id="' . $this->plugin_name . '_api_access_token_timestamp' . '" value="' . $access_token_timestamp . '" readonly> ';
     }
 
 }
