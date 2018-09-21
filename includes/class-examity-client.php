@@ -189,8 +189,7 @@ class Examity_Client {
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
-                $this->loader->add_action( 'the_post', $this, 'api_user_info' );
-                $this->loader->add_action( 'the_post', $this, 'api_course_create' );
+		$this->loader->add_action( 'the_post', $this, 'api_provision' );
 
 	}
 
@@ -265,13 +264,13 @@ class Examity_Client {
         }
 
         public function api_access_token() {
-             // If the current access token is more than 30 minutes old, get a new one.
-             $api_access_token_timestamp = get_option( $this->plugin_name . '_api_access_token_timestamp', '1969-12-31T11:59:59Z' );
-             $now = new DateTime('NOW');
-             $api_access_token_datetime = new DateTime($api_access_token_timestamp);
-             $diff = $now->diff($api_access_token_datetime)->format('%i');
+             // If the current access token is more than 55 minutes old, get a new one.
 
-             if($diff > 50) {
+             $api_access_token_datetime = get_option( $this->plugin_name . '_api_access_token_timestamp', '1969-12-31T11:59:59Z' );
+             $now = new DateTime('NOW');
+             $diff = ($now->getTimeStamp() - $api_access_token_datetime->getTimeStamp())/60;
+
+             if($diff > 55) {
                  delete_option( $this->plugin_name . '_api_access_token' );
              }
 
@@ -298,7 +297,7 @@ class Examity_Client {
 
                  $decoded_response = json_decode($response->GetBody(), false);
                  $api_access_token = $decoded_response->authInfo->access_token;
-                 $api_access_token_timestamp = $decoded_response->timeStamp;
+                 $api_access_token_timestamp = new DateTime($decoded_response->timeStamp);
 
                  // Update the option with the current token.
                  update_option( $this->plugin_name . '_api_access_token', $api_access_token );
@@ -374,88 +373,151 @@ class Examity_Client {
 
          }
 
-         public function api_user_info( $post_object ) {
-             if ($post_object->post_type == 'sfwd-quiz') {
+         public function api_user_info() {
 
-                 $current_user = wp_get_current_user();
+             $current_user = wp_get_current_user();
 
-                 $api_access_token = $this->api_access_token();
-                 $client = $this->api_client();
-                 try {
-                     $response = $client->request(
-                         'GET',
-                         'user/' . $current_user->user_email . '/info',
-                         ['headers' => [
-                             'Authorization' => $api_access_token,
-                         ]]
-                     );
+             $api_access_token = $this->api_access_token();
+             $client = $this->api_client();
+             try {
+                 $response = $client->request(
+                     'GET',
+                     'user/' . $current_user->user_email . '/info',
+                     ['headers' => [
+                         'Authorization' => $api_access_token,
+                     ]]
+                 );
 
-                     $decoded_response = json_decode($response->GetBody(), false);
+                 $decoded_response = json_decode($response->GetBody(), false);
 
-                     if ($decoded_response->message == 'User details not found.') {
-                         // register the user if they don't exist
-                         $this->api_user_create( $current_user );
-                     // Obviously this is debugging behavior to drop.
-                     //} elseif ($decoded_response->userInfo->userId == $current_user->user_email) {
-                     } elseif ($decoded_response == $current_user->user_email) {
-                         // print the user details to the page.
-                         echo print_r($decoded_response->userInfo);
-                         // delete the user.
-                         //$this->api_user_del( $current_user );
-                     } else {
-                         // Return the response.
-                         return $response;
-                     }
-                 } catch (RequestException $e) {
-                     $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
-                     error_log($requestExceptionMessage);
-                 } catch (\Exception $e) {
-                     error_log($e);
+                 if ($decoded_response->message == 'User details not found.') {
+                     // register the user if they don't exist
+                     $this->api_user_create( $current_user );
+                 // Obviously this is debugging behavior to drop.
+                 //} elseif ($decoded_response->userInfo->userId == $current_user->user_email) {
+                 } elseif ($decoded_response == $current_user->user_email) {
+                     // print the user details to the page.
+                     echo print_r($decoded_response->userInfo);
+                     // delete the user.
+                     //$this->api_user_del( $current_user );
+                 } else {
+                     // Return the response.
+                     return $response;
                  }
+             } catch (RequestException $e) {
+                 $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
+                 error_log($requestExceptionMessage);
+             } catch (\Exception $e) {
+                 error_log($e);
              }
          }
 
          public function api_course_create( $post_object ) {
-             if ($post_object->post_type == 'sfwd-courses') {
 
-                 $api_access_token = $this->api_access_token();
-                 $client = $this->api_client();
+             $api_access_token = $this->api_access_token();
+             $client = $this->api_client();
 
-                 // Set the examity instructor to be the post author.
-                 $instructor = get_user_by('id', $post_object->post_author);
-                 $course_name = get_the_title( $post_object);
+             // Set the examity instructor to be the post author.
+             $instructor = get_user_by('id', $post_object->post_author);
 
-                 $courseId = get_current_blog_id() . '_'  . $post_object->ID;
+             // We need to namespace IDs to avoid collisions in a WordPress Network.
+             $ldCourseId = learndash_get_course_id($post_object->ID);
+             $courseId = get_current_blog_id() . '_'  . $ldCourseId;
 
-                 $headers = [
-                     'Authorization' => $api_access_token,
-                 ];
-                 $json = [
-                     'courseId' => $courseId,
-                     'courseName' => $course_name,
-                     'userId' => $instructor->user_email,
-                     'firstName' => $instructor->user_firstname,
-                     'lastName' => $instructor->user_lastname,
-                     'emailAddress' => $instructor->user_email
-                 ];
-                 $body = Psr7\stream_for(json_encode($json));
+             // Set the course name to be the post title.
+             $courseName = get_the_title($post_object);
 
-                 $request = new Psr7\Request(
-                         'POST',
-                         'course',
-                         $headers
-                 );
+             $headers = [
+                 'Authorization' => $api_access_token,
+             ];
+             $json = [
+                 'courseId' => $courseId,
+                 'courseName' => $courseName,
+                 'userId' => $instructor->user_email,
+                 'firstName' => $instructor->user_firstname,
+                 'lastName' => $instructor->user_lastname,
+                 'emailAddress' => $instructor->user_email
+             ];
+             $body = Psr7\stream_for(json_encode($json));
 
-                 try {
-                     $response = $client->send($request->withBody($body));
-                     return $response;
-                 } catch (RequestException $e) {
-                      $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
-                      error_log($requestExceptionMessage);
-                 } catch (\Exception $e) {
-                      error_log($e);
-                 }
+             $request = new Psr7\Request(
+                     'POST',
+                     'course',
+                     $headers
+             );
+
+             try {
+                 $response = $client->send($request->withBody($body));
+                 return $response;
+             } catch (RequestException $e) {
+                  $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
+                  error_log($requestExceptionMessage);
+             } catch (\Exception $e) {
+                  error_log($e);
              }
          }
 
+         public function api_exam_create( $post_object ) {
+
+             $api_access_token = $this->api_access_token();
+             $client = $this->api_client();
+
+	     // Courses with which this exam is associated
+             $ldCourseId = learndash_get_course_id($post_object->ID);
+             // Make sure the associated course exists
+             // before attempting to add a quiz.
+             $this->api_course_create(get_post($ldCourseId));
+
+             // We need to namespace IDs to avoid collisions in a WordPress Network.
+             $courseId = get_current_blog_id() . '_'  . $ldCourseId;
+	     $examId = get_current_blog_id() . '_'  . $post_object->ID;
+
+             // Set the course name to be the post title.
+	     $examName = get_the_title($post_object);
+	     $examURL = get_post_permalink($post_object, true, false);
+
+             // Exams are limited to 2 hours, plus 15 minutes grace.
+             // They are always open.
+	     $examDuration = 135;
+             $examStartDate = '1969-12-31T23:59Z'; 
+             $examEndDate = '2999-12-31T23:59Z'; 
+	    		 
+             $headers = [
+                 'Authorization' => $api_access_token,
+             ];
+             $json = [
+                 'courseId' => $courseId,
+                 'examId' => $examId,
+                 'examName' => $examName,
+                 'examURL' => $examURL,
+                 'examDuration' => $examDuration,
+                 'examStartDate' => $examStartDate,
+                 'examEndDate' => $examEndDate,
+             ];
+             $body = Psr7\stream_for(json_encode($json));
+
+             $request = new Psr7\Request(
+                     'POST',
+                     'course/' . $courseId . '/exam',
+                     $headers
+             );
+
+             try {
+                 $response = $client->send($request->withBody($body));
+                 return $response;
+             } catch (RequestException $e) {
+                  $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
+                  error_log($requestExceptionMessage);
+             } catch (\Exception $e) {
+                  error_log($e);
+             }
+         }
+
+         public function api_provision( $post_object ) {
+
+             if ($post_object->post_type == 'sfwd-quiz') {
+                 $this->api_user_info();
+                 $this->api_exam_create($post_object);
+             }
+         }
 }
