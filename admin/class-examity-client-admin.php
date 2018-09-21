@@ -178,15 +178,15 @@ class Examity_Client_Admin {
         register_setting($this->plugin_name . '_general-section', $this->plugin_name . '_api_access_token');
 
         add_settings_field(
-            $this->plugin_name . '_api_access_token_timestamp',
+            $this->plugin_name . '_api_access_token_datetime',
             __("API Access Token Timestamp:", 'examity-client'),
-            array( $this, 'examity_client_api_access_token_timestamp_element' ),
+            array( $this, 'examity_client_api_access_token_datetime_element' ),
             $this->plugin_name,
             $this->plugin_name . '_general-section',
-            array( 'label_for' => $this->plugin_name . '_api_access_token_timestamp' )
+            array( 'label_for' => $this->plugin_name . '_api_access_token_datetime' )
         );
 
-        register_setting($this->plugin_name . '_general-section', $this->plugin_name . '_api_access_token_timestamp');
+        register_setting($this->plugin_name . '_general-section', $this->plugin_name . '_api_access_token_datetime');
     }
  
     public function examity_client_general_line(){
@@ -218,9 +218,9 @@ class Examity_Client_Admin {
         echo '<input type="text" name="' . $this->plugin_name . '_api_access_token' . '" id="' . $this->plugin_name . '_api_access_token' . '" value="' . $access_token . '" readonly> ';
     }
 
-    public function examity_client_api_access_token_timestamp_element(){
-        $access_token_timestamp = get_option( $this->plugin_name . '_api_access_token_timestamp' );
-        echo '<input type="text" name="' . $this->plugin_name . '_api_access_token_timestamp' . '" id="' . $this->plugin_name . '_api_access_token_timestamp' . '" value="' . $access_token_timestamp . '" readonly> ';
+    public function examity_client_api_access_token_datetime_element(){
+        $access_token_datetime = get_option( $this->plugin_name . '_api_access_token_datetime' );
+        echo '<input type="text" name="' . $this->plugin_name . '_api_access_token_datetime' . '" id="' . $this->plugin_name . '_api_access_token_datetime' . '" value="' . $access_token_datetime->format(DateTime::ISO8601) . '" readonly> ';
     }
 
 }

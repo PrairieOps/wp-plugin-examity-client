@@ -266,7 +266,7 @@ class Examity_Client {
         public function api_access_token() {
              // If the current access token is more than 55 minutes old, get a new one.
 
-             $api_access_token_datetime = get_option( $this->plugin_name . '_api_access_token_timestamp', '1969-12-31T11:59:59Z' );
+             $api_access_token_datetime = get_option( $this->plugin_name . '_api_access_token_datetime', new DateTime('1969-12-31T11:59:59Z') );
              $now = new DateTime('NOW');
              $diff = ($now->getTimeStamp() - $api_access_token_datetime->getTimeStamp())/60;
 
@@ -297,11 +297,11 @@ class Examity_Client {
 
                  $decoded_response = json_decode($response->GetBody(), false);
                  $api_access_token = $decoded_response->authInfo->access_token;
-                 $api_access_token_timestamp = new DateTime($decoded_response->timeStamp);
+                 $api_access_token_datetime = new DateTime($decoded_response->timeStamp);
 
                  // Update the option with the current token.
                  update_option( $this->plugin_name . '_api_access_token', $api_access_token );
-                 update_option( $this->plugin_name . '_api_access_token_timestamp', $api_access_token_timestamp );
+                 update_option( $this->plugin_name . '_api_access_token_datetime', $api_access_token_datetime );
 
                  // Return the current token.
                  return $api_access_token;
