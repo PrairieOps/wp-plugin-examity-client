@@ -393,13 +393,6 @@ class Examity_Client {
                  if ($decoded_response->message == 'User details not found.') {
                      // register the user if they don't exist
                      $this->api_user_create( $current_user );
-                 // Obviously this is debugging behavior to drop.
-                 //} elseif ($decoded_response->userInfo->userId == $current_user->user_email) {
-                 } elseif ($decoded_response == $current_user->user_email) {
-                     // print the user details to the page.
-                     echo print_r($decoded_response->userInfo);
-                     // delete the user.
-                     //$this->api_user_del( $current_user );
                  } else {
                      // Return the response.
                      return $response;
@@ -520,4 +513,27 @@ class Examity_Client {
                  $this->api_exam_create($post_object);
              }
          }
+
+         public function sso_encrypt( $plaintext, $key ) {
+
+               # Cribbed almost verbatim from:
+               # https://secure.php.net/manual/en/function.mcrypt-encrypt.php
+               $mcrypt_cipher = MCRYPT_RIJNDAEL_128;
+               $mcrypt_mode = MCRYPT_MODE_CBC;
+               # create a random IV to use with CBC encoding
+               $iv_size = mcrypt_get_iv_size($mcrypt_cipher, $mcrypt_mode);
+               $iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
+
+               $ciphertext = mcrypt_encrypt($mcrypt_cipher, $key, $plaintext, $mcrypt_mode, $iv);
+
+               # prepend the IV for it to be available for decryption
+               $ciphertext = $iv . $ciphertext;
+
+               # encode the resulting cipher text so it can be represented by a string
+               $ciphertext_base64 = base64_encode($ciphertext);
+
+               return $ciphertext_base64;
+
+         }
+
 }
