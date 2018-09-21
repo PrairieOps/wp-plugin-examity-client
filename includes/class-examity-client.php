@@ -265,7 +265,7 @@ class Examity_Client {
 
         public function api_access_token() {
              // If the current access token is more than 55 minutes old, get a new one.
-
+             //delete_option( $this->plugin_name . '_api_access_token_datetime' );
              $api_access_token_datetime = new DateTime(get_option( $this->plugin_name . '_api_access_token_datetime', '1969-12-31T11:59:59Z' ));
              $now = new DateTime('NOW');
              $diff = ($now->getTimeStamp() - $api_access_token_datetime->getTimeStamp())/60;
@@ -511,7 +511,22 @@ class Examity_Client {
              if ($post_object->post_type == 'sfwd-quiz') {
                  $this->api_user_info();
                  $this->api_exam_create($post_object);
+                 $this->sso_submit($post_object);
              }
+         }
+
+
+         public function sso_submit() {
+             $sso_url = get_option( $this->plugin_name . '_sso_url', 'http://localhost/changeme' );
+             $sso_encryption_key = get_option( $this->plugin_name . '_sso_encryption_key', 'changeme' );
+             $current_user = wp_get_current_user();
+             $payload = $this->sso_encrypt($current_user->user_email, $sso_encryption_key);
+         ?>
+         <form action="<?php echo $sso_url; ?>" method="POST" name="login">
+            <input type="hidden" name="userId" value="<?php echo $payload; ?>" />
+            <input type="submit" name="submit" value="submit" />
+         </form>
+         <?php
          }
 
          public function sso_encrypt( $plaintext, $key ) {
@@ -523,8 +538,11 @@ class Examity_Client {
                # create a random IV to use with CBC encoding
                $iv_size = mcrypt_get_iv_size($mcrypt_cipher, $mcrypt_mode);
                $iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
+               $ivUtf8 = mb_convert_encoding($iv, 'UTF-8');
+               $keyUtf8 = iconv(mb_detect_encoding($key, mb_detect_order(), true), "UTF-8", $key);
+               $plaintextUtf8 = iconv(mb_detect_encoding($plaintext, mb_detect_order(), true), "UTF-8", $plaintext);
 
-               $ciphertext = mcrypt_encrypt($mcrypt_cipher, $key, $plaintext, $mcrypt_mode, $iv);
+               $ciphertext = mcrypt_encrypt($mcrypt_cipher, $keyUtf8, $plaintextUtf8, $mcrypt_mode, $ivUtf8);
 
                # prepend the IV for it to be available for decryption
                $ciphertext = $iv . $ciphertext;
