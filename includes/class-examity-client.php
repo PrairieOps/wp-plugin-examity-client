@@ -274,7 +274,7 @@ class Examity_Client {
                 $api_access_token_datetime = new DateTime($api_access_token_timestamp);
                 $diff = $now->diff($api_access_token_datetime)->format('%i');
 
-                if($diff > 30) {
+                if($diff > 55) {
                     delete_option( $this->plugin_name . '_api_access_token' );
                 }
 
