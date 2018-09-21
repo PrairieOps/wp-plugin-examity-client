@@ -416,13 +416,14 @@ class Examity_Client {
          }
 
          public function api_course_create( $post_object ) {
-             if ($post_object->post_type == 'sfwd-quiz') {
+             if ($post_object->post_type == 'sfwd-courses') {
 
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
 
-                 // @TODO replace with actual logic to query course instructor.
-                 $instructor = wp_get_current_user();
+                 // Set the examity instructor to be the post author.
+                 $instructor = get_user_by('id', $post_object->post_author);
+                 $course_name = get_the_title( $post_object);
 
                  $courseId = get_current_blog_id() . '_'  . $post_object->ID;
 
@@ -431,7 +432,7 @@ class Examity_Client {
                  ];
                  $json = [
                      'courseId' => $courseId,
-                     'courseName' => $post_object->post_name,
+                     'courseName' => $course_name,
                      'userId' => $instructor->user_email,
                      'firstName' => $instructor->user_firstname,
                      'lastName' => $instructor->user_lastname,
