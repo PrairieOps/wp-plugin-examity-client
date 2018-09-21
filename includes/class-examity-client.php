@@ -344,31 +344,36 @@ class Examity_Client {
 
             $api_access_token = $this->api_access_token();
             $client = $this->api_client();
+
+            $headers = [
+                'Authorization' => $api_access_token,
+            ];
+
             $json = [
                 'userId' => $current_user->user_email,
                 'firstName' => $current_user->user_firstname,
                 'lastName' => $current_user->user_lastname,
                 'emailAddress' => $current_user->user_email
             ];
-            //error_log(json_encode($json));
 
-            try {
-                $response = $client->request(
+            $body = Psr7\stream_for(json_encode($json));
+    
+            $request = new Psr7\Request(
                     'POST',
                     'user',
-                    ['json' => $json],
-                    ['headers' => [
-                        'Authorization' => $api_access_token,
-                    ]]
-                );
+                    $headers
+            );
 
+
+            try {
+                $response = $client->send($request->withBody($body));
                 return $response;
-             } catch (RequestException $e) {
+            } catch (RequestException $e) {
                  $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
                  error_log($requestExceptionMessage);
-             } catch (\Exception $e) {
+            } catch (\Exception $e) {
                  error_log($e);
-             }
+            }
 
          }
 
@@ -444,14 +449,13 @@ class Examity_Client {
 
             try {
                 $response = $client->send($request->withBody($body));
-
                 return $response;
-             } catch (RequestException $e) {
+            } catch (RequestException $e) {
                  $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
                  error_log($requestExceptionMessage);
-             } catch (\Exception $e) {
+            } catch (\Exception $e) {
                  error_log($e);
-             }
+            }
 
          }
 
