@@ -187,6 +187,28 @@ class Examity_Client_Admin {
         );
 
         register_setting($this->plugin_name . '_general-section', $this->plugin_name . '_api_access_token_datetime');
+
+        add_settings_field(
+            $this->plugin_name . '_sso_encryption_key',
+            __("SSO Encryption Key:", 'examity-client'),
+            array( $this, 'examity_client_sso_encryption_key_element' ),
+            $this->plugin_name,
+            $this->plugin_name . '_general-section',
+            array( 'label_for' => $this->plugin_name . '_sso_encryption_key' )
+        );
+
+        register_setting($this->plugin_name . '_general-section', $this->plugin_name . '_sso_encryption_key');
+
+        add_settings_field(
+            $this->plugin_name . '_sso_url',
+            __("SSO Endpoint URL:", 'examity-client'),
+            array( $this, 'examity_client_sso_url_element' ),
+            $this->plugin_name,
+            $this->plugin_name . '_general-section',
+            array( 'label_for' => $this->plugin_name . '_sso_url' )
+        );
+
+        register_setting($this->plugin_name . '_general-section', $this->plugin_name . '_sso_url');
     }
  
     public function examity_client_general_line(){
@@ -220,7 +242,17 @@ class Examity_Client_Admin {
 
     public function examity_client_api_access_token_datetime_element(){
         $access_token_datetime = get_option( $this->plugin_name . '_api_access_token_datetime' );
-        echo '<input type="text" name="' . $this->plugin_name . '_api_access_token_datetime' . '" id="' . $this->plugin_name . '_api_access_token_datetime' . '" value="' . $access_token_datetime->format(DateTime::ISO8601) . '" readonly> ';
+        echo '<input type="text" name="' . $this->plugin_name . '_api_access_token_datetime' . '" id="' . $this->plugin_name . '_api_access_token_datetime' . '" value="' . $access_token_datetime . '" readonly> ';
+    }
+
+    public function examity_client_sso_encryption_key_element(){
+        $encryption_key = get_option( $this->plugin_name . '_sso_encryption_key' );
+        echo '<input type="encryption_key" name="' . $this->plugin_name . '_sso_encryption_key' . '" id="' . $this->plugin_name . '_sso_encryption_key' . '" value="' . $encryption_key . '"> ';
+    }
+
+    public function examity_client_sso_url_element(){
+        $url = get_option( $this->plugin_name . '_sso_url' );
+        echo '<input type="url" name="' . $this->plugin_name . '_sso_url' . '" id="' . $this->plugin_name . '_sso_url' . '" value="' . $url . '"> ';
     }
 
 }
