@@ -573,7 +573,7 @@ class Examity_Client {
                //$plaintextUtf8 = iconv(mb_detect_encoding($plaintext, mb_detect_order(), true), "UTF-8", $plaintext);
 
                $ciphertext = mcrypt_encrypt($mcrypt_cipher, $key, $plaintext, $mcrypt_mode, $iv);
-               echo "<h1>" . strlen($key_padding) . $ciphertext . "test</h1>";
+
                // prepend the IV for it to be available for decryption
                $ciphertext = $iv . $ciphertext;
 
