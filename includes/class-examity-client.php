@@ -523,13 +523,19 @@ class Examity_Client {
              $payload = $this->sso_encrypt($current_user->user_email, $sso_encryption_key);
          ?>
          <form action="<?php echo $sso_url; ?>" method="POST" name="login">
-            <input type="hidden" name="userId" value="<?php echo $payload; ?>" />
+            <input type="hidden" name="userName" value="<?php echo $payload; ?>" />
             <input type="submit" name="submit" value="submit" />
          </form>
          <?php
          }
 
          public function sso_encrypt( $plaintext, $key ) {
+
+               // The plaintext and key are UTF-8 encoded on the other side.
+               // If we needed something more automagical:
+               // iconv(mb_detect_encoding($key, mb_detect_order(), true), "UTF-8", $key)
+               //$plaintext = utf8_encode($plaintext);
+               //$key = utf8_encode($key);
 
                // Debugging, remove when everything is working.
                //echo "<h1>key " . $key . " pre</h1>";
@@ -549,7 +555,7 @@ class Examity_Client {
                $plaintext_padding = $block_size - (strlen($plaintext) % $block_size);
                $plaintext .= str_repeat(chr($plaintext_padding), $plaintext_padding);
 
-               // If the key isn't a valid size, null pad it to the next size.
+               // If the key isn't a valid size, pad it to the next size.
                // Sizes of 16, 24, and 32 are allowed.
                $key_length = strlen($key);
                if ($key_length < 16) {
@@ -559,25 +565,26 @@ class Examity_Client {
                } elseif ($key_length < 32) {
                    $key_size = 32;
                }
+
+               // Experiment with PKCS7 vs null padding for the key.
+               //$key_padding = $key_size - (strlen($key) % $key_size);
+               $key_padding = "\0";
                while(strlen($key) < $key_size){
-                   $key .= "\0";
+                   $key .= $key_padding;
                }
+               //$key .= str_repeat(chr($key_padding), $key_padding);
 
                // Debugging, remove when everything is working.
                //echo "<h1>key " . $key . " post</h1>";
                //echo "<h1>text " . $plaintext . " post</h1>";
 
-               // Does it all need to be utf=8?
-               //$ivUtf8 = mb_convert_encoding($iv, 'UTF-8');
-               //$keyUtf8 = iconv(mb_detect_encoding($key, mb_detect_order(), true), "UTF-8", $key);
-               //$plaintextUtf8 = iconv(mb_detect_encoding($plaintext, mb_detect_order(), true), "UTF-8", $plaintext);
-
+               // Encrypt.
                $ciphertext = mcrypt_encrypt($mcrypt_cipher, $key, $plaintext, $mcrypt_mode, $iv);
 
-               // prepend the IV for it to be available for decryption
+               // Prepend the IV for it to be available for decryption.
                $ciphertext = $iv . $ciphertext;
 
-               // encode the resulting cipher text so it can be represented by a string
+               // Encode the result so it can be represented by a string.
                $ciphertext_base64 = base64_encode($ciphertext);
 
                return $ciphertext_base64;
