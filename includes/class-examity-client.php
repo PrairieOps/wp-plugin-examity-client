@@ -535,7 +535,7 @@ class Examity_Client {
                //echo "<h1>key " . $key . " pre</h1>";
                //echo "<h1>text " . $plaintext . " pre</h1>";
 
-               // Cribbed almost verbatim from:
+               // Largely inspired by the PHP mycrypt docs:
                // https://secure.php.net/manual/en/function.mcrypt-encrypt.php
                $mcrypt_cipher = MCRYPT_RIJNDAEL_128;
                $mcrypt_mode = MCRYPT_MODE_CBC;
