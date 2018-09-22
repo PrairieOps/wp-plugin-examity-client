@@ -531,6 +531,10 @@ class Examity_Client {
 
          public function sso_encrypt( $plaintext, $key ) {
 
+               // Debugging, remove when everything is working.
+               //echo "<h1>key " . $key . " pre</h1>";
+               //echo "<h1>text " . $plaintext . " pre</h1>";
+
                // Cribbed almost verbatim from:
                // https://secure.php.net/manual/en/function.mcrypt-encrypt.php
                $mcrypt_cipher = MCRYPT_RIJNDAEL_128;
@@ -540,25 +544,38 @@ class Examity_Client {
                $iv_size = mcrypt_get_iv_size($mcrypt_cipher, $mcrypt_mode);
                $iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
  
-               // We've got to deal with .NET PKCS7 padding.
+               // We've got to deal with .NET PKCS7 data padding.
                $block_size = mcrypt_get_block_size($mcrypt_cipher, $mcrypt_mode);
-               $padding = $plaintext - (strlen($plaintext) % $block_size);
-               $plaintext .= str_repeat(chr($padding), $padding);
+               $plaintext_padding = $block_size - (strlen($plaintext) % $block_size);
+               $plaintext .= str_repeat(chr($plaintext_padding), $plaintext_padding);
 
-               // Add null padding to match the espected size
-               while(strlen($iv) < $iv_size){
-                   $iv .= "\0";
+               // If the key isn't a valid size, null pad it to the next size.
+               // Sizes of 16, 24, and 32 are allowed.
+               $key_length = strlen($key);
+               if ($key_length < 16) {
+                   $key_size = 16;
+               } elseif ($key_length < 24) {
+                   $key_size = 24;
+               } elseif ($key_length < 32) {
+                   $key_size = 32;
+               }
+               while(strlen($key) < $key_size){
+                   $key .= "\0";
                }
 
-               // Everything should be utf-8
+               // Debugging, remove when everything is working.
+               //echo "<h1>key " . $key . " post</h1>";
+               //echo "<h1>text " . $plaintext . " post</h1>";
+
+               // Does it all need to be utf=8?
                //$ivUtf8 = mb_convert_encoding($iv, 'UTF-8');
-               $keyUtf8 = iconv(mb_detect_encoding($key, mb_detect_order(), true), "UTF-8", $key);
+               //$keyUtf8 = iconv(mb_detect_encoding($key, mb_detect_order(), true), "UTF-8", $key);
                //$plaintextUtf8 = iconv(mb_detect_encoding($plaintext, mb_detect_order(), true), "UTF-8", $plaintext);
 
                $ciphertext = mcrypt_encrypt($mcrypt_cipher, $key, $plaintext, $mcrypt_mode, $iv);
-               echo "<h1>" . strlen($keyUtf8) . $ciphertext . "test</h1>";
+               echo "<h1>" . strlen($key_padding) . $ciphertext . "test</h1>";
                // prepend the IV for it to be available for decryption
-               //$ciphertext = $ivUtf8 . $ciphertext;
+               $ciphertext = $iv . $ciphertext;
 
                // encode the resulting cipher text so it can be represented by a string
                $ciphertext_base64 = base64_encode($ciphertext);
