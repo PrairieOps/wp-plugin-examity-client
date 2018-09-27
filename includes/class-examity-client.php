@@ -510,7 +510,11 @@ class Examity_Client {
 
          public function api_provision( $post_object ) {
 
-             if ($post_object->post_type == 'sfwd-quiz') {
+             // returns true if the user has access to this learndash object.
+             $has_access = sfwd_lms_has_access_fn($post_object->ID, $current_user->ID);
+
+             // Perform Examity sign in if this is a quiz and the user has access to the object.
+             if ($post_object->post_type == 'sfwd-quiz' && $has_access) {
                  $this->api_user_info();
                  $this->api_exam_create($post_object);
              }
@@ -521,7 +525,12 @@ class Examity_Client {
              // This gets called outside the loop.
              global $wp_query;
              $post_object = $wp_query->post;
-             if ($post_object->post_type == 'sfwd-quiz') {
+
+             // returns true if the user has access to this learndash object.
+             $has_access = sfwd_lms_has_access_fn($post_object->ID, $current_user->ID);
+
+             // Perform Examity sign in if this is a quiz and the user has access to the object.
+             if ($post_object->post_type == 'sfwd-quiz' && $has_access) {
                  $sso_url = get_option( $this->plugin_name . '_sso_url', 'http://localhost/changeme' );
                  $sso_encryption_key = get_option( $this->plugin_name . '_sso_encryption_key', 'changeme' );
                  $sso_initialization_vector = hex2bin(get_option( $this->plugin_name . '_sso_initialization_vector', '0000000000000000' ));
