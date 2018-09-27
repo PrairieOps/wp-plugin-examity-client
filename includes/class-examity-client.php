@@ -189,6 +189,7 @@ class Examity_Client {
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $this, 'sso_script' );
 		$this->loader->add_action( 'the_post', $this, 'api_provision' );
 
 	}
@@ -265,13 +266,14 @@ class Examity_Client {
 
         public function api_access_token() {
              // If the current access token is more than 55 minutes old, get a new one.
-             delete_option( $this->plugin_name . '_api_access_token_datetime' );
-             $api_access_token_datetime = new DateTime(get_option( $this->plugin_name . '_api_access_token_datetime', '1969-12-31T11:59:59Z' ));
+             //delete_option( $this->plugin_name . '_api_access_token_datetime' );
+             $epoch =  new DateTime('1969-12-31T11:59:59Z');
+             $api_access_token_datetime = get_option( $this->plugin_name . '_api_access_token_datetime', $epoch );
              $now = new DateTime('NOW');
              $diff = ($now->getTimeStamp() - $api_access_token_datetime->getTimeStamp())/60;
-
              if($diff > 55) {
                  delete_option( $this->plugin_name . '_api_access_token' );
+                 delete_option( $this->plugin_name . '_api_access_datetime' );
              }
 
              // Try to pull the token from options.
@@ -511,78 +513,61 @@ class Examity_Client {
              if ($post_object->post_type == 'sfwd-quiz') {
                  $this->api_user_info();
                  $this->api_exam_create($post_object);
-                 $this->sso_submit($post_object);
              }
          }
 
 
-         public function sso_submit() {
-             $sso_url = get_option( $this->plugin_name . '_sso_url', 'http://localhost/changeme' );
-             $sso_encryption_key = get_option( $this->plugin_name . '_sso_encryption_key', 'changeme' );
-             $current_user = wp_get_current_user();
-             $payload = $this->sso_encrypt($current_user->user_email, $sso_encryption_key);
-         ?>
-         <form action="<?php echo $sso_url; ?>" method="POST" name="login">
-            <input type="hidden" name="userName" value="<?php echo $payload; ?>" />
-            <input type="submit" name="submit" value="submit" />
-         </form>
-         <?php
+         public function sso_script() {
+             // This gets called outside the loop.
+             global $wp_query;
+             $post_object = $wp_query->post;
+             if ($post_object->post_type == 'sfwd-quiz') {
+                 $sso_url = get_option( $this->plugin_name . '_sso_url', 'http://localhost/changeme' );
+                 $sso_encryption_key = get_option( $this->plugin_name . '_sso_encryption_key', 'changeme' );
+                 $sso_initialization_vector = hex2bin(get_option( $this->plugin_name . '_sso_initialization_vector', '0000000000000000' ));
+                 $current_user = wp_get_current_user();
+                 $payload = $this->sso_encrypt($current_user->user_email, $sso_encryption_key, $sso_initialization_vector);
+
+                 if ( ! wp_script_is( 'jquery', 'done' ) ) {
+                   wp_enqueue_script( 'jquery' );
+                 }
+
+                 wp_add_inline_script( 'jquery-migrate', 'jQuery(document).ready(function( $ ){
+                     $.post( "' . $sso_url . '", { userName: "'. $payload . '" })
+                 });' );
+             }
          }
 
-         public function sso_encrypt( $plaintext, $key ) {
-
-               // The plaintext and key are UTF-8 encoded on the other side.
-               // If we needed something more automagical:
-               // iconv(mb_detect_encoding($key, mb_detect_order(), true), "UTF-8", $key)
-               //$plaintext = utf8_encode($plaintext);
-               //$key = utf8_encode($key);
-
-               // Debugging, remove when everything is working.
-               //echo "<h1>key " . $key . " pre</h1>";
-               //echo "<h1>text " . $plaintext . " pre</h1>";
+         public function sso_encrypt( $plaintext, $key, $iv ) {
 
                // Largely inspired by the PHP mycrypt docs:
                // https://secure.php.net/manual/en/function.mcrypt-encrypt.php
-               $mcrypt_cipher = MCRYPT_RIJNDAEL_128;
+               $mcrypt_cipher = MCRYPT_3DES;
                $mcrypt_mode = MCRYPT_MODE_CBC;
 
-               // create a random IV to use with CBC encoding
-               $iv_size = mcrypt_get_iv_size($mcrypt_cipher, $mcrypt_mode);
-               $iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
+               // Ideally, we'd create a random IV to use with CBC encoding.
+               // But in reality, we need to use a fixed IV, which is basically
+               // useless.
+               // $iv_size = mcrypt_get_iv_size($mcrypt_cipher, $mcrypt_mode);
+               // $iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
  
                // We've got to deal with .NET PKCS7 data padding.
                $block_size = mcrypt_get_block_size($mcrypt_cipher, $mcrypt_mode);
                $plaintext_padding = $block_size - (strlen($plaintext) % $block_size);
                $plaintext .= str_repeat(chr($plaintext_padding), $plaintext_padding);
 
-               // If the key isn't a valid size, pad it to the next size.
-               // Sizes of 16, 24, and 32 are allowed.
-               $key_length = strlen($key);
-               if ($key_length < 16) {
-                   $key_size = 16;
-               } elseif ($key_length < 24) {
-                   $key_size = 24;
-               } elseif ($key_length < 32) {
-                   $key_size = 32;
-               }
-
-               // Experiment with PKCS7 vs null padding for the key.
-               //$key_padding = $key_size - (strlen($key) % $key_size);
-               $key_padding = "\0";
-               while(strlen($key) < $key_size){
+               // 3DES key must be 24 characters long.
+               $key_padding = substr($key,0,8);
+               while(strlen($key) < 24){
                    $key .= $key_padding;
                }
-               //$key .= str_repeat(chr($key_padding), $key_padding);
-
-               // Debugging, remove when everything is working.
-               //echo "<h1>key " . $key . " post</h1>";
-               //echo "<h1>text " . $plaintext . " post</h1>";
 
                // Encrypt.
                $ciphertext = mcrypt_encrypt($mcrypt_cipher, $key, $plaintext, $mcrypt_mode, $iv);
 
-               // Prepend the IV for it to be available for decryption.
-               $ciphertext = $iv . $ciphertext;
+               // Ideally, we'd prepend the IV for it to be available for
+               // decryption, but there's no parsing for that in Examity.
+               //$ciphertext = $ciphertext . $iv;
 
                // Encode the result so it can be represented by a string.
                $ciphertext_base64 = base64_encode($ciphertext);
