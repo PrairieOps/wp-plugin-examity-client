@@ -1,5 +1,9 @@
 # WordPress Examity Client Plugin
 
+## Prerequisites
+
+Requires the PHP mcrypt extension and the LearnDash LMS plugin.
+
 ## Setup
 
 1. Clone this repository to wp-content/plugins
