@@ -375,138 +375,199 @@ class Examity_Client {
 
          }
 
-         public function api_user_info() {
-
-             $current_user = wp_get_current_user();
-
-             $api_access_token = $this->api_access_token();
-             $client = $this->api_client();
-             try {
-                 $response = $client->request(
-                     'GET',
-                     'user/' . $current_user->user_email . '/info',
-                     ['headers' => [
-                         'Authorization' => $api_access_token,
-                     ]]
-                 );
-
-                 $decoded_response = json_decode($response->GetBody(), false);
-
-                 if ($decoded_response->message == 'User details not found.') {
-                     // register the user if they don't exist
-                     $this->api_user_create( $current_user );
-                 } else {
-                     // Return the response.
-                     return $response;
-                 }
-             } catch (RequestException $e) {
-                 $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
-                 error_log($requestExceptionMessage);
-             } catch (\Exception $e) {
-                 error_log($e);
-             }
-         }
-
-         public function api_course_create( $post_object ) {
-
-             $api_access_token = $this->api_access_token();
-             $client = $this->api_client();
-
-             // Set the examity instructor to be the post author.
-             $instructor = get_user_by('id', $post_object->post_author);
-
-             // We need to namespace IDs to avoid collisions in a WordPress Network.
-             $ldCourseId = learndash_get_course_id($post_object->ID);
-             $courseId = get_current_blog_id() . '_'  . $ldCourseId;
-
-             // Set the course name to be the post title.
-             $courseName = get_the_title($post_object);
-
-             $headers = [
-                 'Authorization' => $api_access_token,
-             ];
-             $json = [
-                 'courseId' => $courseId,
-                 'courseName' => $courseName,
-                 'userId' => $instructor->user_email,
-                 'firstName' => $instructor->user_firstname,
-                 'lastName' => $instructor->user_lastname,
-                 'emailAddress' => $instructor->user_email
-             ];
-             $body = Psr7\stream_for(json_encode($json));
-
-             $request = new Psr7\Request(
-                     'POST',
-                     'course',
-                     $headers
-             );
-
-             try {
-                 $response = $client->send($request->withBody($body));
-                 return $response;
-             } catch (RequestException $e) {
-                  $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
-                  error_log($requestExceptionMessage);
-             } catch (\Exception $e) {
-                  error_log($e);
-             }
-         }
-
-         public function api_exam_create( $post_object ) {
-
-             $api_access_token = $this->api_access_token();
-             $client = $this->api_client();
+         public function api_user_info( $post_object ) {
 
              // LearnDash API call.
 	     // Courses with which this exam is associated
              $ldCourseId = learndash_get_course_id($post_object->ID);
 
-             // Make sure the associated course exists
-             // before attempting to add a quiz.
-             $this->api_course_create(get_post($ldCourseId));
+             // leardash will return a course id of 0 when there isn't a match.
+             if ($ldCourseId > 0) {
+                 $current_user = wp_get_current_user();
+
+                 $api_access_token = $this->api_access_token();
+                 $client = $this->api_client();
+                 try {
+                     $response = $client->request(
+                         'GET',
+                         'user/' . $current_user->user_email . '/info',
+                         ['headers' => [
+                             'Authorization' => $api_access_token,
+                         ]]
+                     );
+
+                     $decoded_response = json_decode($response->GetBody(), false);
+
+                     if ($decoded_response->message == 'User details not found.') {
+                         // register the user if they don't exist
+                         $this->api_user_create( $current_user );
+                     } else {
+                         // Return the response.
+                         return $response;
+                     }
+                 } catch (RequestException $e) {
+                     $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
+                     error_log($requestExceptionMessage);
+                 } catch (\Exception $e) {
+                     error_log($e);
+                 }
+             }
+         }
+
+         public function api_course_create( $post_object ) {
 
              // We need to namespace IDs to avoid collisions in a WordPress Network.
-             $courseId = get_current_blog_id() . '_'  . $ldCourseId;
-	     $examId = get_current_blog_id() . '_'  . $post_object->ID;
+             $ldCourseId = learndash_get_course_id($post_object->ID);
 
-             // Set the course name to be the post title.
-	     $examName = get_the_title($post_object);
-	     $examURL = get_post_permalink($post_object, true, false);
+             // leardash will return a course id of 0 when there isn't a match.
+             if ($ldCourseId > 0) {
+                 $api_access_token = $this->api_access_token();
+                 $client = $this->api_client();
 
-             // Exams are limited to 2 hours, plus 15 minutes grace.
-             // They are always open.
-	     $examDuration = 135;
-             $examStartDate = '1969-12-31T23:59Z'; 
-             $examEndDate = '2999-12-31T23:59Z'; 
-	    		 
-             $headers = [
-                 'Authorization' => $api_access_token,
-             ];
-             $json = [
-                 'courseId' => $courseId,
-                 'examId' => $examId,
-                 'examName' => $examName,
-                 'examURL' => $examURL,
-                 'examDuration' => $examDuration,
-                 'examStartDate' => $examStartDate,
-                 'examEndDate' => $examEndDate,
-             ];
-             $body = Psr7\stream_for(json_encode($json));
+                 // Set the examity instructor to be the post author.
+                 $instructor = get_user_by('id', $post_object->post_author);
 
-             $request = new Psr7\Request(
-                     'POST',
-                     'course/' . $courseId . '/exam',
-                     $headers
-             );
+                 $courseId = get_current_blog_id() . '_'  . $ldCourseId;
+    
+                 // Set the course name to be the post title.
+                 $courseName = get_the_title($post_object);
+    
+                 $headers = [
+                     'Authorization' => $api_access_token,
+                 ];
+                 $json = [
+                     'courseId' => $courseId,
+                     'courseName' => $courseName,
+                     'userId' => $instructor->user_email,
+                     'firstName' => $instructor->user_firstname,
+                     'lastName' => $instructor->user_lastname,
+                     'emailAddress' => $instructor->user_email
+                 ];
+                 $body = Psr7\stream_for(json_encode($json));
+    
+                 $request = new Psr7\Request(
+                         'POST',
+                         'course',
+                         $headers
+                 );
+    
+                 try {
+                     $response = $client->send($request->withBody($body));
+                     return $response;
+                 } catch (RequestException $e) {
+                      $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
+                      error_log($requestExceptionMessage);
+                 } catch (\Exception $e) {
+                      error_log($e);
+                 }
+             }
+         }
 
-             try {
-                 $response = $client->send($request->withBody($body));
-                 return $response;
-             } catch (RequestException $e) {
-                  $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
-                  error_log($requestExceptionMessage);
-             } catch (\Exception $e) {
-                  error_log($e);
+
+         public function api_course_enroll( $post_object ) {
+
+             // We need to namespace IDs to avoid collisions in a WordPress Network.
+             $ldCourseId = learndash_get_course_id($post_object->ID);
+
+             // leardash will return a course id of 0 when there isn't a match.
+             if ($ldCourseId > 0) {
+                 $api_access_token = $this->api_access_token();
+                 $client = $this->api_client();
+
+                 $courseId = get_current_blog_id() . '_'  . $ldCourseId;
+    
+                 $current_user = wp_get_current_user();
+                 $userId = $current_user->user_email;
+                 
+                 $headers = [
+                     'Authorization' => $api_access_token,
+                 ];
+                 $json = [
+                     'courseId' => $courseId,
+                     'userId' => $userId,
+                 ];
+                 $body = Psr7\stream_for(json_encode($json));
+    
+                 $request = new Psr7\Request(
+                         'POST',
+                         'course/' . $courseId . '/user/' . $userId,
+                         $headers
+                 );
+    
+                 try {
+                     $response = $client->send($request->withBody($body));
+                     return $response;
+                 } catch (RequestException $e) {
+                      $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
+                      error_log($requestExceptionMessage);
+                 } catch (\Exception $e) {
+                      error_log($e);
+                 }
+             }
+         }
+
+         public function api_exam_create( $post_object ) {
+
+             // LearnDash API call.
+	     // Courses with which this exam is associated
+             $ldCourseId = learndash_get_course_id($post_object->ID);
+
+             // leardash will return a course id of 0 when there isn't a match.
+             if ($ldCourseId > 0) {
+                 $api_access_token = $this->api_access_token();
+                 $client = $this->api_client();
+
+                 // Make sure the associated course exists
+                 // before attempting to add an exam.
+                 $this->api_course_create(get_post($ldCourseId));
+
+                 // Make sure the user is enrolled in the course
+                 // before attempting to add an exam.
+                 $this->api_course_enroll(get_post($ldCourseId));
+
+                 // We need to namespace IDs to avoid collisions in a WordPress Network.
+                 $courseId = get_current_blog_id() . '_'  . $ldCourseId;
+	         $examId = get_current_blog_id() . '_'  . $post_object->ID;
+
+                 // Set the course name to be the post title.
+	         $examName = get_the_title($post_object);
+	         $examURL = get_post_permalink($post_object, true, false);
+
+                 // Exams are limited to 2 hours, plus 15 minutes grace.
+                 // They are always open.
+	         $examDuration = 135;
+                 $examStartDate = '1969-12-31T23:59Z'; 
+                 $examEndDate = '2999-12-31T23:59Z'; 
+	            	 
+                 $headers = [
+                     'Authorization' => $api_access_token,
+                 ];
+                 $json = [
+                     'courseId' => $courseId,
+                     'examId' => $examId,
+                     'examName' => $examName,
+                     'examURL' => $examURL,
+                     'examDuration' => $examDuration,
+                     'examStartDate' => $examStartDate,
+                     'examEndDate' => $examEndDate,
+                 ];
+                 $body = Psr7\stream_for(json_encode($json));
+
+                 $request = new Psr7\Request(
+                         'POST',
+                         'course/' . $courseId . '/exam',
+                         $headers
+                 );
+
+                 try {
+                     $response = $client->send($request->withBody($body));
+                     return $response;
+                 } catch (RequestException $e) {
+                      $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
+                      error_log($requestExceptionMessage);
+                 } catch (\Exception $e) {
+                      error_log($e);
+                 }
              }
          }
 
@@ -518,11 +579,11 @@ class Examity_Client {
 
              // Perform Examity provisioning if this is a quiz and the user has access to the object.
              if ($post_object->post_type == 'sfwd-quiz' && $has_access) {
-                 $this->api_user_info();
+                 $this->api_user_info($post_object);
                  $this->api_exam_create($post_object);
              // Perform Examity provisioning if this is a course and the user has access to the object.
              } elseif ($post_object->post_type == 'sfwd-courses' && $has_access) {
-                 $this->api_user_info();
+                 $this->api_user_info($post_object);
                  // LearnDash API call.
                  // Returns array of quizzes that are associated with the course
                  $quizzes = learndash_get_global_quiz_list($post_object->ID);
