@@ -699,12 +699,13 @@ class Examity_Client {
          }
 
          public function examity_client_meta() {
-                 add_meta_box( 'examity_client_meta', 'Examity Client Metabox', $this->examity_client_sfwd_quiz_meta, 'sfwd-quiz', 'normal', 'high' );
+                 add_meta_box( 'examity_client_meta', 'Examity Client', $this->examity_client_sfwd_quiz_meta, 'sfwd-quiz', 'normal', 'high' );
          }
 
-         public function examity_client_sfwd_quiz_meta( $post_object ) {
-                 if ($post_object->post_type == 'sfwd-quiz') {
-                     $examity_client_sfwd_quiz_create = get_post_meta( $post_object->ID, '_examity_client_sfwd_quiz_create', true);
+         public function examity_client_sfwd_quiz_meta() {
+                 global $post;
+                 if ($post->post_type == 'sfwd-quiz') {
+                     $examity_client_sfwd_quiz_create = get_post_meta( $post->ID, '_examity_client_sfwd_quiz_create', true);
                      echo 'Create this as an exam in Examity';
                      ?>
                      <input type="checkbox" name="examity_client_sfwd_quiz_create" value="<?php echo esc_attr( $examity_client_sfwd_quiz_create ); ?>" />
@@ -715,9 +716,9 @@ class Examity_Client {
          public function examity_client_save_meta( $post_ID ) {
                  global $post;
                  if( $post->post_type == 'sfwd-quiz' ) {
-                 if (isset( $_POST ) ) {
-                     update_post_meta( $post_ID, '_examity_client_sfwd_quiz_create', strip_tags( $_POST['examity_client_sfwd_quiz_create'] ) );
-                 }
+                     if (isset( $_POST ) ) {
+                         update_post_meta( $post_ID, '_examity_client_sfwd_quiz_create', strip_tags( $_POST['examity_client_sfwd_quiz_create'] ) );
+                     }
              }
          }
 
