@@ -457,8 +457,10 @@ class Examity_Client {
              $api_access_token = $this->api_access_token();
              $client = $this->api_client();
 
+             // LearnDash API call.
 	     // Courses with which this exam is associated
              $ldCourseId = learndash_get_course_id($post_object->ID);
+
              // Make sure the associated course exists
              // before attempting to add a quiz.
              $this->api_course_create(get_post($ldCourseId));
@@ -510,6 +512,7 @@ class Examity_Client {
 
          public function api_provision( $post_object ) {
 
+             // LearnDash API call.
              // returns true if the user has access to this learndash object.
              $has_access = sfwd_lms_has_access_fn($post_object->ID, $current_user->ID);
 
@@ -526,6 +529,7 @@ class Examity_Client {
              global $wp_query;
              $post_object = $wp_query->post;
 
+             // LearnDash API call.
              // returns true if the user has access to this learndash object.
              $has_access = sfwd_lms_has_access_fn($post_object->ID, $current_user->ID);
 
