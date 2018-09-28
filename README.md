@@ -20,4 +20,8 @@ php composer.phar install
 
 4. Activate the plugin in WordPress.
 
-5. Configure the plugin using the API connection details provided by Examity.
+5. Configure the plugin using the API connection and SSO details provided by Examity.
+
+6. The plugin will now automatically register students, create courses and exams, and enroll students in classes. These actions are triggerd by users browsing learndash courses.
+
+7. This plugin provides the following shortcode for an Examity SSO button: ```[examity-client-login]```
