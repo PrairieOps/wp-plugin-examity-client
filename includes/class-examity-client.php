@@ -189,8 +189,11 @@ class Examity_Client {
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
-		$this->loader->add_action( 'wp_enqueue_scripts', $this, 'sso_js' );
+		//$this->loader->add_action( 'wp_enqueue_scripts', $this, 'sso_ajax' );
 		$this->loader->add_action( 'the_post', $this, 'api_provision' );
+
+                $this->loader->add_shortcode('examity-client-login', $this, 'sso_form_shortcode');
+		$this->loader->add_filter( 'init', $this, 'sso_form_shortcode_filter' );
 
 	}
 
@@ -624,13 +627,47 @@ class Examity_Client {
 
                          // Add the exam.
                          $this->api_exam_create($quiz_object);
-                    }
+                     }
                  }
              }
          }
 
 
-         public function sso_js() {
+         public function sso_form_shortcode() {
+
+             // Provides a visible button that POSTs to the Examity SSO login form.
+
+             // This may get called outside the loop.
+             global $wp_query;
+             $post_object = $wp_query->post;
+             $current_user = wp_get_current_user();
+
+             // LearnDash API call.
+             // returns true if the user has access to this learndash object.
+             $has_access = sfwd_lms_has_access_fn($post_object->ID, $current_user->ID);
+
+             // Render Examity sign in form the user has access to the object.
+             if ($has_access) {
+
+                 $sso_url = get_option( $this->plugin_name . '_sso_url', 'http://localhost/changeme' );
+                 $sso_encryption_key = get_option( $this->plugin_name . '_sso_encryption_key', 'changeme' );
+                 $sso_initialization_vector = hex2bin(get_option( $this->plugin_name . '_sso_initialization_vector', '0000000000000000' ));
+                 $payload = $this->sso_encrypt($current_user->user_email, $sso_encryption_key, $sso_initialization_vector);
+                 $form = '<form action="' . $sso_url . '" method="POST" name="login">
+                          <input type="hidden" name="userName" value="' . $payload . '" />
+                          <input class="button wpProQuiz_button" type="submit" name="submit" value="Examity®Access" >
+                          </form>';
+                 return (string)$form;
+             }
+         }
+
+         public function sso_form_shortcode_filter( $content ) {
+             return do_shortcode($content);
+         }
+
+         public function sso_ajax() {
+
+             // Provides an AJAX POST to the Examity SSO login form.
 
              // This gets called outside the loop.
              global $wp_query;
@@ -641,8 +678,8 @@ class Examity_Client {
              // returns true if the user has access to this learndash object.
              $has_access = sfwd_lms_has_access_fn($post_object->ID, $current_user->ID);
 
-             // Perform Examity sign in if this is a quiz and the user has access to the object.
-             if ($post_object->post_type == 'sfwd-quiz' && $has_access) {
+             // Perform Examity sign in if this is a course or quiz and the user has access to the object.
+             if (($post_object->post_type == 'sfwd-courses' || $post_object->post_type == 'sfwd-quiz') && $has_access) {
                  $sso_url = get_option( $this->plugin_name . '_sso_url', 'http://localhost/changeme' );
                  $sso_encryption_key = get_option( $this->plugin_name . '_sso_encryption_key', 'changeme' );
                  $sso_initialization_vector = hex2bin(get_option( $this->plugin_name . '_sso_initialization_vector', '0000000000000000' ));
