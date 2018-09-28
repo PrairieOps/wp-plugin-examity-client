@@ -525,6 +525,7 @@ class Examity_Client {
 
 
          public function sso_js() {
+
              // This gets called outside the loop.
              global $wp_query;
              $post_object = $wp_query->post;
