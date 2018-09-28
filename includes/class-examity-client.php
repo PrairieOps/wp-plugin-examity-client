@@ -250,14 +250,14 @@ class Examity_Client {
                 );
 
                 $base_uri = get_option( $this->plugin_name . '_api_url', 'http://localhost/changeme' );
-                $timeout = get_option( $this->plugin_name . '_api_timeout', '1' );
+                $timeout = get_option( $this->plugin_name . '_api_timeout', 1 );
                 $client = new Client([
                     // log requests.
                     'handler' => $stack,
                     // Base URI is used with relative requests
                     'base_uri' => $base_uri,
                     // You can set any number of default request options.
-                    'timeout'  => $timeout,
+                    'timeout'  => (float)$timeout,
                     'headers' => [
                         'User-Agent' => $this->plugin_name . '/' . $this->version,
                         'Content-Type' => 'application/json',

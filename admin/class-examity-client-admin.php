@@ -211,7 +211,7 @@ class Examity_Client_Admin {
     }
 
     public function examity_client_api_timeout_element(){
-        $timeout = get_option( $this->plugin_name . '_api_timeout' );
+        $timeout = get_option( $this->plugin_name . '_api_timeout', 1 );
         echo '<input type="number" name="' . $this->plugin_name . '_api_timeout' . '" id="' . $this->plugin_name . '_api_timeout' . '" value="' . $timeout . '"> ';
     }
 
