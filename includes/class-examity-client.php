@@ -520,6 +520,17 @@ class Examity_Client {
              if ($post_object->post_type == 'sfwd-quiz' && $has_access) {
                  $this->api_user_info();
                  $this->api_exam_create($post_object);
+             // Perform Examity provisioning if this is a course and the user has access to the object.
+             } elseif ($post_object->post_type == 'sfwd-courses' && $has_access) {
+                 $this->api_user_info();
+                 // LearnDash API call.
+                 // Returns array of quizzes that are associated with the course
+                 $quizzes = learndash_get_global_quiz_list($post_object->ID);
+
+                 // Perform provisioning for each quiz.
+                 foreach ($quizzes as $quiz_object) {
+                     $this->api_exam_create($quiz_object);
+                }
              }
          }
 
