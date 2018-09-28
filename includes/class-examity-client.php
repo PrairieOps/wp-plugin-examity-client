@@ -595,6 +595,8 @@ class Examity_Client {
              if ($ldCourseId > 0 && $has_access) {
                  // Perform Examity provisioning if this is a quiz.
                  if ($post_object->post_type == 'sfwd-quiz') {
+
+                     // Get or create the user.
                      $this->api_user_info($post_object, $current_user);
 
                      // Make sure the associated course exists
@@ -607,26 +609,32 @@ class Examity_Client {
 
                      // Add the exam.
                      $this->api_exam_create($post_object);
+
                  // Perform Examity provisioning if this is a course.
                  } elseif ($post_object->post_type == 'sfwd-courses') {
+
+                     // Get or create the user.
                      $this->api_user_info($post_object, $current_user);
+
+                     // Make sure the associated course exists
+                     // before attempting to add an exam.
+                     $this->api_course_create(get_post($ldCourseId));
+    
+                     // Make sure the user is enrolled in the course
+                     // before attempting to add an exam.
+                     $this->api_course_enroll(get_post($ldCourseId), $current_user);
+    
                      // LearnDash API call.
                      // Returns array of quizzes that are associated with the course
-                     $quizzes = learndash_get_global_quiz_list($post_object->ID);
-    
+                     $global_quizzes = learndash_get_global_quiz_list($post_object->ID);
+
                      // Perform provisioning for each quiz.
-                     foreach ($quizzes as $quiz_object) {
+                     if (count($global_quizzes) > 0) {
+                         foreach ($global_quizzes as $quiz_object) {
 
-                         // Make sure the associated course exists
-                         // before attempting to add an exam.
-                         $this->api_course_create(get_post($ldCourseId));
-    
-                         // Make sure the user is enrolled in the course
-                         // before attempting to add an exam.
-                         $this->api_course_enroll(get_post($ldCourseId), $current_user);
-
-                         // Add the exam.
-                         $this->api_exam_create($quiz_object);
+                             // Add the exam.
+                             $this->api_exam_create($quiz_object);
+                         }
                      }
                  }
              }
