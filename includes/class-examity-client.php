@@ -596,17 +596,6 @@ class Examity_Client {
                  // Perform Examity provisioning if this is a quiz.
                  if ($post_object->post_type == 'sfwd-quiz') {
 
-                     // Get or create the user.
-                     $this->api_user_info($post_object, $current_user);
-
-                     // Make sure the associated course exists
-                     // before attempting to add an exam.
-                     $this->api_course_create(get_post($ldCourseId));
-    
-                     // Make sure the user is enrolled in the course
-                     // before attempting to add an exam.
-                     $this->api_course_enroll(get_post($ldCourseId), $current_user);
-
                      // Add the exam.
                      $this->api_exam_create($post_object);
 
@@ -616,19 +605,32 @@ class Examity_Client {
                      // Get or create the user.
                      $this->api_user_info($post_object, $current_user);
 
-                     // Make sure the associated course exists
-                     // before attempting to add an exam.
+                     // Make sure the associated course exists.
                      $this->api_course_create(get_post($ldCourseId));
     
-                     // Make sure the user is enrolled in the course
-                     // before attempting to add an exam.
+                     // Make sure the user is enrolled in the course.
                      $this->api_course_enroll(get_post($ldCourseId), $current_user);
     
                      // LearnDash API call.
-                     // Returns array of quizzes that are associated with the course
-                     $global_quizzes = learndash_get_global_quiz_list($post_object->ID);
+                     // Returns array of global quizzes that are associated with the course.
+                     $global_quizzes = learndash_get_global_quiz_list($ldCourseId);
 
-                     // Perform provisioning for each quiz.
+                     // LearnDash API call.
+                     // Returns array of quiz type course step IDs that are associated with the course.
+                     $course_steps = learndash_course_get_steps_by_type( $ldCourseId, 'sfwd-quiz' );
+
+                     // Perform provisioning for each quiz that we find as a course step.
+                     if (count($course_steps) > 0) {
+                         foreach ($course_steps as $course_step) {
+
+                             $quiz_object = get_post($course_step);
+
+                             // Add the exam.
+                             $this->api_exam_create($quiz_object);
+                         }
+                     }
+
+                     // Perform provisioning for each quiz that we find as a global quiz.
                      if (count($global_quizzes) > 0) {
                          foreach ($global_quizzes as $quiz_object) {
 
@@ -654,7 +656,7 @@ class Examity_Client {
              // returns true if the user has access to this learndash object.
              $has_access = sfwd_lms_has_access_fn($post_object->ID, $current_user->ID);
 
-             // Render Examity sign in form the user has access to the object.
+             // Render Examity sign in form if the user has access to the object.
              if ($has_access) {
 
                  $sso_url = get_option( $this->plugin_name . '_sso_url', 'http://localhost/changeme' );
