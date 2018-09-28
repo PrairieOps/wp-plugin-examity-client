@@ -535,7 +535,10 @@ class Examity_Client {
 
                  // Set the course name to be the post title.
 	         $examName = get_the_title($post_object);
-	         $examURL = get_post_permalink($post_object, true, false);
+
+                 // The raw quiz permalink has an unresolved token.
+	         $quiz_permalink = get_post_permalink($post_object, true, false);
+	         $examURL = str_replace('%sfwd-quiz%', $post_object->post_name, $quiz_permalink);
 
                  // Exams are limited to 2 hours, plus 15 minutes grace.
                  // They are always open.
