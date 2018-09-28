@@ -577,21 +577,28 @@ class Examity_Client {
              // returns true if the user has access to this learndash object.
              $has_access = sfwd_lms_has_access_fn($post_object->ID, $current_user->ID);
 
-             // Perform Examity provisioning if this is a quiz and the user has access to the object.
-             if ($post_object->post_type == 'sfwd-quiz' && $has_access) {
-                 $this->api_user_info($post_object);
-                 $this->api_exam_create($post_object);
-             // Perform Examity provisioning if this is a course and the user has access to the object.
-             } elseif ($post_object->post_type == 'sfwd-courses' && $has_access) {
-                 $this->api_user_info($post_object);
-                 // LearnDash API call.
-                 // Returns array of quizzes that are associated with the course
-                 $quizzes = learndash_get_global_quiz_list($post_object->ID);
+             // We need to namespace IDs to avoid collisions in a WordPress Network.
+             $ldCourseId = learndash_get_course_id($post_object->ID);
 
-                 // Perform provisioning for each quiz.
-                 foreach ($quizzes as $quiz_object) {
-                     $this->api_exam_create($quiz_object);
-                }
+             // leardash will return a course id of 0 when there isn't a match.
+             // Proceed if there is a match for the object and the user has access.
+             if ($ldCourseId > 0 && $has_access) {
+                 // Perform Examity provisioning if this is a quiz.
+                 if ($post_object->post_type == 'sfwd-quiz') {
+                     $this->api_user_info($post_object);
+                     $this->api_exam_create($post_object);
+                 // Perform Examity provisioning if this is a course.
+                 } elseif ($post_object->post_type == 'sfwd-courses') {
+                     $this->api_user_info($post_object);
+                     // LearnDash API call.
+                     // Returns array of quizzes that are associated with the course
+                     $quizzes = learndash_get_global_quiz_list($post_object->ID);
+    
+                     // Perform provisioning for each quiz.
+                     foreach ($quizzes as $quiz_object) {
+                         $this->api_exam_create($quiz_object);
+                    }
+                 }
              }
          }
 
