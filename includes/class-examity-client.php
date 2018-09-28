@@ -189,7 +189,7 @@ class Examity_Client {
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
-		$this->loader->add_action( 'wp_enqueue_scripts', $this, 'sso_script' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $this, 'sso_js' );
 		$this->loader->add_action( 'the_post', $this, 'api_provision' );
 
 	}
@@ -513,7 +513,7 @@ class Examity_Client {
              // returns true if the user has access to this learndash object.
              $has_access = sfwd_lms_has_access_fn($post_object->ID, $current_user->ID);
 
-             // Perform Examity sign in if this is a quiz and the user has access to the object.
+             // Perform Examity provisioning if this is a quiz and the user has access to the object.
              if ($post_object->post_type == 'sfwd-quiz' && $has_access) {
                  $this->api_user_info();
                  $this->api_exam_create($post_object);
@@ -521,7 +521,7 @@ class Examity_Client {
          }
 
 
-         public function sso_script() {
+         public function sso_js() {
              // This gets called outside the loop.
              global $wp_query;
              $post_object = $wp_query->post;
