@@ -33,6 +33,8 @@ use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7;
+use Psr\Http\Message\ResponseInterface;
+use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\MessageFormatter;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
@@ -173,6 +175,8 @@ class Examity_Client {
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
                 $this->loader->add_action( 'admin_menu', $plugin_admin, 'define_admin_page' );
                 $this->loader->add_action( 'admin_init', $plugin_admin, 'register_setting' );
+                $this->loader->add_action( 'add_meta_boxes', $this, 'examity_client_meta' );
+                $this->loader->add_action( 'save_post', $this, 'examity_client_save_meta' );
 
 	}
 
@@ -366,16 +370,19 @@ class Examity_Client {
                     $headers
             );
 
-
-            try {
-                $response = $client->send($request->withBody($body));
-                return $response;
-            } catch (RequestException $e) {
-                 $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
-                 error_log($requestExceptionMessage);
-            } catch (\Exception $e) {
-                 error_log($e);
-            }
+            // A not-so-useful async implementation.
+            // We'd need to accumulate like api calls as promises
+            // and then wait for them as a batch for this to be useful.
+            $promise = $client->sendAsync($request->withBody($body));
+            $promise->then(
+                function (ResponseInterface $response) {
+                    return $response;
+                },
+                function (RequestException $e) {
+                    error_log($e->getMessage());
+                }
+            );
+            $promise->wait();
 
          }
 
@@ -458,16 +465,20 @@ class Examity_Client {
                          'course',
                          $headers
                  );
-    
-                 try {
-                     $response = $client->send($request->withBody($body));
-                     return $response;
-                 } catch (RequestException $e) {
-                      $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
-                      error_log($requestExceptionMessage);
-                 } catch (\Exception $e) {
-                      error_log($e);
-                 }
+   
+                 // A not-so-useful async implementation.
+                 // We'd need to accumulate like api calls as promises
+                 // and then wait for them as a batch for this to be useful.
+                 $promise = $client->sendAsync($request->withBody($body));
+                 $promise->then(
+                     function (ResponseInterface $response) {
+                         return $response;
+                     },
+                     function (RequestException $e) {
+                         error_log($e->getMessage());
+                     }
+                 );
+                 $promise->wait();
              }
          }
 
@@ -505,16 +516,21 @@ class Examity_Client {
                          'course/' . $courseId . '/user/' . $userId,
                          $headers
                  );
-    
-                 try {
-                     $response = $client->send($request->withBody($body));
-                     return $response;
-                 } catch (RequestException $e) {
-                      $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
-                      error_log($requestExceptionMessage);
-                 } catch (\Exception $e) {
-                      error_log($e);
-                 }
+   
+ 
+                 // A not-so-useful async implementation.
+                 // We'd need to accumulate like api calls as promises
+                 // and then wait for them as a batch for this to be useful.
+                 $promise = $client->sendAsync($request->withBody($body));
+                 $promise->then(
+                     function (ResponseInterface $response) {
+                         return $response;
+                     },
+                     function (RequestException $e) {
+                         error_log($e->getMessage());
+                     }
+                 );
+                 $promise->wait();
              }
          }
 
@@ -566,15 +582,19 @@ class Examity_Client {
                          $headers
                  );
 
-                 try {
-                     $response = $client->send($request->withBody($body));
-                     return $response;
-                 } catch (RequestException $e) {
-                      $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
-                      error_log($requestExceptionMessage);
-                 } catch (\Exception $e) {
-                      error_log($e);
-                 }
+                 // A not-so-useful async implementation.
+                 // We'd need to accumulate like api calls as promises
+                 // and then wait for them as a batch for this to be useful.
+                 $promise = $client->sendAsync($request->withBody($body));
+                 $promise->then(
+                     function (ResponseInterface $response) {
+                         return $response;
+                     },
+                     function (RequestException $e) {
+                         error_log($e->getMessage());
+                     }
+                 );
+                 $promise->wait();
              }
          }
 
@@ -676,6 +696,29 @@ class Examity_Client {
 
          public function sso_form_shortcode_filter( $content ) {
              return do_shortcode($content);
+         }
+
+         public function examity_client_meta() {
+                 add_meta_box( 'examity_client_meta', 'Examity Client Metabox', $this->examity_client_sfwd_quiz_meta, 'sfwd-quiz', 'normal', 'high' );
+         }
+
+         public function examity_client_sfwd_quiz_meta( $post_object ) {
+                 if ($post_object->post_type == 'sfwd-quiz') {
+                     $examity_client_sfwd_quiz_create = get_post_meta( $post_object->ID, '_examity_client_sfwd_quiz_create', true);
+                     echo 'Create this as an exam in Examity';
+                     ?>
+                     <input type="checkbox" name="examity_client_sfwd_quiz_create" value="<?php echo esc_attr( $examity_client_sfwd_quiz_create ); ?>" />
+                     <?php
+                 }
+         }
+
+         public function examity_client_save_meta( $post_ID ) {
+                 global $post;
+                 if( $post->post_type == 'sfwd-quiz' ) {
+                 if (isset( $_POST ) ) {
+                     update_post_meta( $post_ID, '_examity_client_sfwd_quiz_create', strip_tags( $_POST['examity_client_sfwd_quiz_create'] ) );
+                 }
+             }
          }
 
          public function sso_ajax() {
