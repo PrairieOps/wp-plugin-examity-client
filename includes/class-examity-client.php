@@ -697,13 +697,13 @@ class Examity_Client {
          public function sso_form_shortcode_filter( $content ) {
              return do_shortcode($content);
          }
-
+         // maybe move this to the class loader?
          public function examity_client_meta() {
                  add_meta_box( 'examity_client_meta', 'Examity Client', $this->examity_client_sfwd_quiz_meta, 'sfwd-quiz', 'normal', 'high' );
          }
 
-         public function examity_client_sfwd_quiz_meta() {
-                 global $post;
+         public function examity_client_sfwd_quiz_meta( $post ) {
+                 //global $post;
                  if ($post->post_type == 'sfwd-quiz') {
                      $examity_client_sfwd_quiz_create = get_post_meta( $post->ID, '_examity_client_sfwd_quiz_create', true);
                      echo 'Create this as an exam in Examity';
