@@ -536,12 +536,17 @@ class Examity_Client {
 
          public function api_exam_create( $post_object ) {
 
+
+             // Check to see if the author enabled provisioning for the exam.
+             $is_enabled = get_post_meta( $post_object->ID, 'examity_client_sfwd_quiz_create', true);
+
              // LearnDash API call.
 	     // Courses with which this exam is associated
              $ldCourseId = learndash_get_course_id($post_object->ID);
 
              // leardash will return a course id of 0 when there isn't a match.
-             if ($ldCourseId > 0) {
+             // Only proceed if provisioning is enabled and there is a match.
+             if ($is_enabled && $ldCourseId > 0) {
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
 
