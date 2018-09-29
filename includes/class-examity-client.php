@@ -697,29 +697,54 @@ class Examity_Client {
          public function sso_form_shortcode_filter( $content ) {
              return do_shortcode($content);
          }
-         // maybe move this to the class loader?
+
          public function examity_client_meta() {
-                 add_meta_box( 'examity_client_meta', 'Examity Client', $this->examity_client_sfwd_quiz_meta, 'sfwd-quiz', 'normal', 'high' );
+                 add_meta_box( 'examity_client_meta', 'Examity Client', array( $this, 'examity_client_sfwd_quiz_meta'), 'sfwd-quiz', 'normal', 'high' );
          }
 
          public function examity_client_sfwd_quiz_meta( $post ) {
-                 //global $post;
-                 if ($post->post_type == 'sfwd-quiz') {
-                     $examity_client_sfwd_quiz_create = get_post_meta( $post->ID, '_examity_client_sfwd_quiz_create', true);
-                     echo 'Create this as an exam in Examity';
-                     ?>
-                     <input type="checkbox" name="examity_client_sfwd_quiz_create" value="<?php echo esc_attr( $examity_client_sfwd_quiz_create ); ?>" />
-                     <?php
-                 }
+
+             // Adds field to enable Examity exam provisioning.
+             
+	     // Security checks
+             wp_nonce_field( basename( __FILE__ ), 'examity_client_sfwd_quiz_create_nonce' );
+
+             $examity_client_sfwd_quiz_create = checked(get_post_meta( $post->ID, 'examity_client_sfwd_quiz_create', true), 'on', false);
+             
+             $html = '<label for="examity_client_sfwd_quiz_create"><input type="checkbox" name="examity_client_sfwd_quiz_create" '
+                     . $examity_client_sfwd_quiz_create .
+        
+                     ' /> Create exam in Examity</label>';
+
+             echo $html;
          }
 
-         public function examity_client_save_meta( $post_ID ) {
-                 global $post;
-                 if( $post->post_type == 'sfwd-quiz' ) {
-                     if (isset( $_POST ) ) {
-                         update_post_meta( $post_ID, '_examity_client_sfwd_quiz_create', strip_tags( $_POST['examity_client_sfwd_quiz_create'] ) );
-                     }
+         public function examity_client_save_meta( $post_id ) {
+
+             global $post;
+             
+             // Security checks
+             if ( !isset( $_POST['examity_client_sfwd_quiz_create_nonce'] ) 
+             || !wp_verify_nonce( $_POST['examity_client_sfwd_quiz_create_nonce'], basename( __FILE__ ) ) ) {
+                 return $post_id;
              }
+
+             // Check current user permissions
+             $post_type = get_post_type_object( $post->post_type );
+             if ( !current_user_can( $post_type->cap->edit_post, $post_id ) ) {
+                 return $post_id;
+             }
+             
+             // Do not save the data if autosave
+             if ( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) {
+                 return $post_id;
+             }
+
+             if ($post->post_type == 'sfwd-quiz') {
+                 update_post_meta($post_id, 'examity_client_sfwd_quiz_create', $_POST['examity_client_sfwd_quiz_create']);
+             }
+             
+             return $post_id;
          }
 
          public function sso_ajax() {
