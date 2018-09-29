@@ -56,10 +56,17 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-examity-client.php';
  *
  * @since    0.0.1
  */
+/**
+ * Check if Async is active
+ **/
+if ( in_array( 'wp-async-task/wp-async-task.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
 function run_examity_client() {
 
 	$plugin = new Examity_Client();
 	$plugin->run();
 
 }
+add_action('wp_async_task_loaded', function (){
 run_examity_client();
+});
+}

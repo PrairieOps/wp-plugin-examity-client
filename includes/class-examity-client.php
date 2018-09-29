@@ -39,7 +39,13 @@ use GuzzleHttp\MessageFormatter;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 
-class Examity_Client {
+
+//get the base class
+if(!class_exists('WP_Async_Task')) {
+    require_once plugin_dir_path( __FILE__ ) . '../../wp-async-task/wp-async-task.php';
+}
+
+class Examity_Client extends WP_Async_Task {
 
 	/**
 	 * The loader that's responsible for maintaining and registering all hooks that power
@@ -194,13 +200,26 @@ class Examity_Client {
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 		//$this->loader->add_action( 'wp_enqueue_scripts', $this, 'sso_ajax' );
-		$this->loader->add_action( 'the_post', $this, 'api_provision' );
 
                 $this->loader->add_shortcode('examity-client-login', $this, 'sso_form_shortcode');
 		$this->loader->add_filter( 'init', $this, 'sso_form_shortcode_filter' );
+		$this->loader->add_action( 'wp_async_the_post', $this, 'api_provision' );
 
 	}
 
+        protected $action = 'the_post';
+        protected function prepare_data( $data ) {
+            $post_id = $data[0];
+            return array( 'post_id' == $post_id );
+        }
+        protected function run_action() {
+            $post_id = $_POST['post_id'];
+            $post_object = get_post( $post_id );
+	    if ( $post ) {
+	    	// Assuming $this->action is 'save_post'
+	    	do_action( "wp_async_the_post", $post_object );
+	    }
+        }
 	/**
 	 * Run the loader to execute all of the hooks with WordPress.
 	 *
