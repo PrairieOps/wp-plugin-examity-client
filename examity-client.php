@@ -62,4 +62,5 @@ function run_examity_client() {
 	$plugin->run();
 
 }
+
 run_examity_client();
