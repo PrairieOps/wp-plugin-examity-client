@@ -193,9 +193,11 @@ class Examity_Client {
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
-		$this->loader->add_action( 'examity_client_cron_api_provision', $this, 'api_provision_batch' );
 
-		$this->loader->add_action( 'init', $this, 'examity_client_cron_scheduler' );
+		$this->loader->add_action( 'examity_client_cron_api_provision', $this, 'api_provision_batch' );
+                // directly calling batch code for debugging.
+		//$this->loader->add_action( 'init', $this, 'examity_client_cron_scheduler' );
+		$this->loader->add_action( 'wp_head', $this, 'api_provision_batch' );
                 $this->loader->add_filter('cron_schedules', $this, 'examity_client_cron_schedules'); 
 
                 $this->loader->add_shortcode('examity-client-login', $this, 'sso_form_shortcode');
@@ -327,64 +329,80 @@ class Examity_Client {
 
          public function api_user_del( $user_object ) {
 
-             $api_access_token = $this->api_access_token();
-             $client = $this->api_client();
+             // Required fields.
+             $userId = $user_object->user_email;
 
-             try {
-                 $response = $client->request(
-                     'DELETE',
-                     'user/' . $user_object->user_email,
-                     ['headers' => [
-                         'Authorization' => $api_access_token,
-                     ]]
-                 );
+             // Proceed if we have the required field.
+             if (isset($userId)) {
 
-                 return $response;
-             } catch (RequestException $e) {
-                 $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
-                 error_log($requestExceptionMessage);
-             } catch (\Exception $e) {
-                 error_log($e);
+                 $api_access_token = $this->api_access_token();
+                 $client = $this->api_client();
+
+                 try {
+                     $response = $client->request(
+                         'DELETE',
+                         'user/' . $userId,
+                         ['headers' => [
+                             'Authorization' => $api_access_token,
+                         ]]
+                     );
+
+                     return $response;
+                 } catch (RequestException $e) {
+                     $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
+                     error_log($requestExceptionMessage);
+                 } catch (\Exception $e) {
+                     error_log($e);
+                 }
              }
          }
 
          public function api_user_create( $user_object ) {
 
-            $api_access_token = $this->api_access_token();
-            $client = $this->api_client();
+             // Required fields.
+             $userId = $user_object->user_email;
+             $firstName = $user_object->user_firstname;
+             $lastName = $user_object->user_lastname;
 
-            $headers = [
-                'Authorization' => $api_access_token,
-            ];
+             // Proceed if we have all required fields.
+             if (isset($userId) && isset($firstName) && isset($lastName)) {
 
-            $json = [
-                'userId' => $user_object->user_email,
-                'firstName' => $user_object->user_firstname,
-                'lastName' => $user_object->user_lastname,
-                'emailAddress' => $user_object->user_email
-            ];
+                 $api_access_token = $this->api_access_token();
+                 $client = $this->api_client();
 
-            $body = Psr7\stream_for(json_encode($json));
+                 $headers = [
+                     'Authorization' => $api_access_token,
+                 ];
+
+                 $json = [
+                     'userId' => $userId,
+                     'firstName' => $firstName,
+                     'lastName' => $lastName,
+                     'emailAddress' => $userId
+                 ];
+
+                 $body = Psr7\stream_for(json_encode($json));
     
-            $request = new Psr7\Request(
-                    'POST',
-                    'user',
-                    $headers
-            );
+                 $request = new Psr7\Request(
+                         'POST',
+                         'user',
+                         $headers
+                 );
 
-            // A not-so-useful async implementation.
-            // We'd need to accumulate like api calls as promises
-            // and then wait for them as a batch for this to be useful.
-            $promise = $client->sendAsync($request->withBody($body));
-            $promise->then(
-                function (ResponseInterface $response) {
-                    return $response;
-                },
-                function (RequestException $e) {
-                    error_log($e->getMessage());
-                }
-            );
-            $promise->wait();
+                 // A not-so-useful async implementation.
+                 // We'd need to accumulate like api calls as promises
+                 // and then wait for them as a batch for this to be useful.
+                 $promise = $client->sendAsync($request->withBody($body));
+                 $promise->then(
+                     function (ResponseInterface $response) {
+                         return $response;
+                     },
+                     function (RequestException $e) {
+                         error_log($e->getMessage());
+                     }
+                 );
+                 $promise->wait();
+             }
 
          }
 
@@ -398,16 +416,19 @@ class Examity_Client {
 	     // Courses with which this exam is associated
              $ldCourseId = learndash_get_course_id($post_object->ID);
 
+             // Required field.
+             $userId = $user_object->user_email;
+
              // leardash will return a course id of 0 when there isn't a match.
              // Proceed if there is a match for the object and the user has access.
-             if ($ldCourseId > 0 && $has_access) {
+             if ($ldCourseId > 0 && $has_access && isset($userId)) {
 
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
                  try {
                      $response = $client->request(
                          'GET',
-                         'user/' . $user_object->user_email . '/info',
+                         'user/' . $userId . '/info',
                          ['headers' => [
                              'Authorization' => $api_access_token,
                          ]]
@@ -423,8 +444,7 @@ class Examity_Client {
                          return $response;
                      }
                  } catch (RequestException $e) {
-                     $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
-                     error_log($requestExceptionMessage);
+                     error_log($e->getMessage());
                  } catch (\Exception $e) {
                      error_log($e);
                  }
@@ -436,18 +456,22 @@ class Examity_Client {
              // We need to namespace IDs to avoid collisions in a WordPress Network.
              $ldCourseId = learndash_get_course_id($post_object->ID);
 
+             // Required fields.
+             // Set the examity instructor to be the post author.
+             $instructor = get_user_by('id', $post_object->post_author);
+             $userId = $instructor->user_email;
+             $firstName =  $instructor->user_firstname;
+             $lastName = $instructor->user_lastname;
+             // Namespace the course id.
+             $courseId = get_current_blog_id() . '_'  . $ldCourseId;
+             // Set the course name to be the post title.
+             $courseName = get_the_title($post_object);
+
              // leardash will return a course id of 0 when there isn't a match.
-             if ($ldCourseId > 0) {
+             // Proceed if we have all required fields.
+             if ($ldCourseId > 0 && isset($userId) && isset($firstName) && isset($lastName) && isset($courseId) && isset($courseName)) {
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
-
-                 // Set the examity instructor to be the post author.
-                 $instructor = get_user_by('id', $post_object->post_author);
-
-                 $courseId = get_current_blog_id() . '_'  . $ldCourseId;
-    
-                 // Set the course name to be the post title.
-                 $courseName = get_the_title($post_object);
     
                  $headers = [
                      'Authorization' => $api_access_token,
@@ -455,10 +479,10 @@ class Examity_Client {
                  $json = [
                      'courseId' => $courseId,
                      'courseName' => $courseName,
-                     'userId' => $instructor->user_email,
-                     'firstName' => $instructor->user_firstname,
-                     'lastName' => $instructor->user_lastname,
-                     'emailAddress' => $instructor->user_email
+                     'userId' => $userId,
+                     'firstName' => $firstName,
+                     'lastName' => $lastName,
+                     'emailAddress' => $userId
                  ];
                  $body = Psr7\stream_for(json_encode($json));
     
@@ -494,15 +518,16 @@ class Examity_Client {
              // We need to namespace IDs to avoid collisions in a WordPress Network.
              $ldCourseId = learndash_get_course_id($post_object->ID);
 
+             // Required fields.
+             $courseId = get_current_blog_id() . '_'  . $ldCourseId;
+             $userId = $user_object->user_email;
+
              // leardash will return a course id of 0 when there isn't a match.
-             // Proceed if there is a match for the object and the user has access.
-             if ($ldCourseId > 0 && $has_access) {
+             // Proceed if there is a match for the object, the user has access
+             // and we have all required fields.
+             if ($ldCourseId > 0 && $has_access && isset($courseId) && isset($userId)) {
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
-
-                 $courseId = get_current_blog_id() . '_'  . $ldCourseId;
-    
-                 $userId = $user_object->user_email;
                  
                  $headers = [
                      'Authorization' => $api_access_token,
@@ -546,28 +571,31 @@ class Examity_Client {
 	     // Courses with which this exam is associated
              $ldCourseId = learndash_get_course_id($post_object->ID);
 
+             // Required fields.
+             // We need to namespace IDs to avoid collisions in a WordPress Network.
+             $courseId = get_current_blog_id() . '_'  . $ldCourseId;
+	     $examId = get_current_blog_id() . '_'  . $post_object->ID;
+
+             // Set the course name to be the post title.
+	     $examName = get_the_title($post_object);
+
+             // The raw quiz permalink has an unresolved token.
+	     $quiz_permalink = get_post_permalink($post_object, true, false);
+	     $examURL = str_replace('%sfwd-quiz%', $post_object->post_name, $quiz_permalink);
+
+             // Exams are limited to 2 hours, plus 15 minutes grace.
+             // They are always open.
+	     $examDuration = 135;
+             $examStartDate = '1969-12-31T23:59Z'; 
+             $examEndDate = '2999-12-31T23:59Z'; 
+
              // leardash will return a course id of 0 when there isn't a match.
-             // Only proceed if provisioning is enabled and there is a match.
-             if ($is_enabled && $ldCourseId > 0) {
+             // Only proceed if provisioning is enabled and there is a match
+             // and we have all required fields.
+             if ($is_enabled && $ldCourseId > 0 && isset($courseId) && isset($examId) && isset($examName) && isset($examURL) && isset($examDuration) && isset($examStartDate) && isset($examEndDate)) {
+
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
-
-                 // We need to namespace IDs to avoid collisions in a WordPress Network.
-                 $courseId = get_current_blog_id() . '_'  . $ldCourseId;
-	         $examId = get_current_blog_id() . '_'  . $post_object->ID;
-
-                 // Set the course name to be the post title.
-	         $examName = get_the_title($post_object);
-
-                 // The raw quiz permalink has an unresolved token.
-	         $quiz_permalink = get_post_permalink($post_object, true, false);
-	         $examURL = str_replace('%sfwd-quiz%', $post_object->post_name, $quiz_permalink);
-
-                 // Exams are limited to 2 hours, plus 15 minutes grace.
-                 // They are always open.
-	         $examDuration = 135;
-                 $examStartDate = '1969-12-31T23:59Z'; 
-                 $examEndDate = '2999-12-31T23:59Z'; 
 	            	 
                  $headers = [
                      'Authorization' => $api_access_token,
@@ -691,7 +719,10 @@ class Examity_Client {
 
              // Schedules the provisioning task to run.
              if (! wp_next_scheduled ( 'examity_client_cron_api_provision' )) {
-               wp_schedule_event(time(), 'fiveminutes', 'examity_client_cron_api_provision');
+             // unscheduling for debugging
+               //wp_schedule_event(time(), 'fiveminutes', 'examity_client_cron_api_provision');
+             } else {
+                wp_clear_scheduled_hook('examity_client_cron_api_provision');
              }
          }
 
@@ -728,8 +759,12 @@ class Examity_Client {
                          if ((count($course_steps) + count($global_quizzes)) > 0) {
 
                              // LearnDash API call.
+                             // Leverages WP User Query, and allows us to pass in arguments.
                              // Returns an array of users (including admins) with access to the course.
-                             $users = learndash_get_users_for_course($ldCourseId, null, false);
+                             $users_args = array(
+                                 'fields'   => 'all',
+                             );
+                             $users = learndash_get_users_for_course($ldCourseId, $users_args, false);
 
                              if (count($users) > 0) {
 
@@ -755,8 +790,9 @@ class Examity_Client {
                                          $this->api_exam_create($quiz_object);
                                      }
                                  }
-
+//print_r($users);
                                  foreach ($users as $user_object) {
+echo $user_object->ID;
 
                                      // Get or create the user.
                                      $this->api_user_info($course_object, $user_object);
