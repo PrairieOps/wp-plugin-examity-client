@@ -366,7 +366,7 @@ class Examity_Client {
              $lastName = $user_object->user_lastname;
 
              // Proceed if we have all required fields.
-             if (filter_var($userId, FILTER_VALIDATE_EMAIL) && isset($firstName) && isset($lastName)) {
+             if (filter_var($userId, FILTER_VALIDATE_EMAIL) && ($firstName != NULL) && ($lastName != NULL)) {
 
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
@@ -478,7 +478,7 @@ class Examity_Client {
 
              // leardash will return a course id of 0 when there isn't a match.
              // Proceed if we have all required fields.
-             if ($ldCourseId > 0 && filter_var($userId, FILTER_VALIDATE_EMAIL) && isset($firstName) && isset($lastName) && isset($courseId) && isset($courseName)) {
+             if ($ldCourseId > 0 && filter_var($userId, FILTER_VALIDATE_EMAIL) && ($firstName != NULL) && ($lastName != NULL) && ($courseId != NULL) && ($courseName != NULL)) {
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
     
@@ -540,7 +540,7 @@ class Examity_Client {
              // leardash will return a course id of 0 when there isn't a match.
              // Proceed if there is a match for the object, the user has access
              // and we have all required fields.
-             if ($ldCourseId > 0 && $has_access && isset($courseId) && filter_var($userId, FILTER_VALIDATE_EMAIL)) {
+             if ($ldCourseId > 0 && $has_access && ($courseId != NULL) && filter_var($userId, FILTER_VALIDATE_EMAIL)) {
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
                  
@@ -613,7 +613,7 @@ class Examity_Client {
              // leardash will return a course id of 0 when there isn't a match.
              // Only proceed if provisioning is enabled and there is a match
              // and we have all required fields.
-             if ($is_enabled && $ldCourseId > 0 && isset($courseId) && isset($examId) && isset($examName) && filter_var($examURL, FILTER_VALIDATE_URL) && isset($examDuration) && isset($examStartDate) && isset($examEndDate)) {
+             if ($is_enabled && $ldCourseId > 0 && ($courseId != NULL) && ($examId != NULL) && ($examName != NULL) && filter_var($examURL, FILTER_VALIDATE_URL) && ($examDuration != NULL) && ($examStartDate != NULL) && ($examEndDate != NULL)) {
 
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
