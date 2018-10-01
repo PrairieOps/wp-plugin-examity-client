@@ -193,8 +193,10 @@ class Examity_Client {
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
-		//$this->loader->add_action( 'wp_enqueue_scripts', $this, 'sso_ajax' );
-		$this->loader->add_action( 'the_post', $this, 'api_provision' );
+		$this->loader->add_action( 'examity_client_cron_api_provision', $this, 'api_provision_batch' );
+
+		$this->loader->add_action( 'init', $this, 'examity_client_cron_scheduler' );
+                $this->loader->add_filter('cron_schedules', $this, 'examity_client_cron_schedules'); 
 
                 $this->loader->add_shortcode('examity-client-login', $this, 'sso_form_shortcode');
 		$this->loader->add_filter( 'init', $this, 'sso_form_shortcode_filter' );
@@ -603,7 +605,7 @@ class Examity_Client {
              }
          }
 
-         public function api_provision( $post_object ) {
+         public function api_provision_the_post( $post_object ) {
 
              $current_user = wp_get_current_user();
 
@@ -627,17 +629,8 @@ class Examity_Client {
                      // Add the exam.
                      $this->api_exam_create($post_object);
 
-                 // Perform Examity provisioning if this is a course.
+                 // Do some more checks if this is a course.
                  } elseif ($post_object->post_type == 'sfwd-courses') {
-
-                     // Get or create the user.
-                     $this->api_user_info($post_object, $current_user);
-
-                     // Make sure the associated course exists.
-                     $this->api_course_create(get_post($ldCourseId));
-    
-                     // Make sure the user is enrolled in the course.
-                     $this->api_course_enroll(get_post($ldCourseId), $current_user);
     
                      // LearnDash API call.
                      // Returns array of global quizzes that are associated with the course.
@@ -647,23 +640,131 @@ class Examity_Client {
                      // Returns array of quiz type course step IDs that are associated with the course.
                      $course_steps = learndash_course_get_steps_by_type( $ldCourseId, 'sfwd-quiz' );
 
-                     // Perform provisioning for each quiz that we find as a course step.
-                     if (count($course_steps) > 0) {
-                         foreach ($course_steps as $course_step) {
+                     // Perform Examity provisioning if this is a course with quizzes.
+                     if ((count($course_steps) + count($global_quizzes)) > 0) {
 
-                             $quiz_object = get_post($course_step);
+                         // Get or create the user.
+                         $this->api_user_info($post_object, $current_user);
 
-                             // Add the exam.
-                             $this->api_exam_create($quiz_object);
+                         // Make sure the associated course exists.
+                         $this->api_course_create(get_post($ldCourseId));
+    
+                         // Make sure the user is enrolled in the course.
+                         $this->api_course_enroll(get_post($ldCourseId), $current_user);
+
+                         // Perform provisioning for each quiz that we find as a course step.
+                         if (count($course_steps) > 0) {
+                             foreach ($course_steps as $course_step) {
+
+                                 $quiz_object = get_post($course_step);
+
+                                 // Add the exam.
+                                 $this->api_exam_create($quiz_object);
+                             }
+                         }
+
+                         // Perform provisioning for each quiz that we find as a global quiz.
+                         if (count($global_quizzes) > 0) {
+                             foreach ($global_quizzes as $quiz_object) {
+
+                                 // Add the exam.
+                                 $this->api_exam_create($quiz_object);
+                             }
                          }
                      }
+                 }
+             }
+         }
+        public function examity_client_cron_schedules( $schedules ) {
 
-                     // Perform provisioning for each quiz that we find as a global quiz.
-                     if (count($global_quizzes) > 0) {
-                         foreach ($global_quizzes as $quiz_object) {
+            // Creates custom interval for running provisioning task.
+            $schedules['fiveminutes'] = array(
+                'interval'=> 300,
+                'display'=>  __('Once Every 5 minutes')
+            );
 
-                             // Add the exam.
-                             $this->api_exam_create($quiz_object);
+            return $schedules;
+
+        }
+
+         public function examity_client_cron_scheduler() {
+
+             // Schedules the provisioning task to run.
+             if (! wp_next_scheduled ( 'examity_client_cron_api_provision' )) {
+               wp_schedule_event(time(), 'fiveminutes', 'examity_client_cron_api_provision');
+             }
+         }
+
+         public function api_provision_batch() {
+
+             // Provisions all relevant objects found within all courses.
+
+             $courses_args = array(
+                 'post_type'   => 'sfwd-courses',
+                 'numberposts' => -1
+             );
+
+             $courses = get_posts($courses_args);
+
+             // Perform provisioning for each quiz that we find as a course step.
+             if (count($courses) > 0) {
+                 foreach ($courses as $course_object) {
+
+                     // We need to namespace IDs to avoid collisions in a WordPress Network.
+                     $ldCourseId = learndash_get_course_id($course_object->ID);
+
+                     // leardash will return a course id of 0 when there isn't a match.
+                     if ($ldCourseId > 0) {
+    
+                         // LearnDash API call.
+                         // Returns array of global quizzes that are associated with the course.
+                         $global_quizzes = learndash_get_global_quiz_list($ldCourseId);
+
+                         // LearnDash API call.
+                         // Returns array of quiz type course step IDs that are associated with the course.
+                         $course_steps = learndash_course_get_steps_by_type( $ldCourseId, 'sfwd-quiz' );
+
+                         // Perform Examity provisioning if this is a course with quizzes.
+                         if ((count($course_steps) + count($global_quizzes)) > 0) {
+
+                             // LearnDash API call.
+                             // Returns an array of users (including admins) with access to the course.
+                             $users = learndash_get_users_for_course($ldCourseId, null, false);
+
+                             if (count($users) > 0) {
+
+                                 // Make sure the associated course exists.
+                                 $this->api_course_create(get_post($ldCourseId));
+
+                                 // Perform provisioning for each quiz that we find as a course step.
+                                 if (count($course_steps) > 0) {
+                                     foreach ($course_steps as $course_step) {
+
+                                         $quiz_object = get_post($course_step);
+
+                                         // Add the exam.
+                                         $this->api_exam_create($quiz_object);
+                                     }
+                                 }
+
+                                 // Perform provisioning for each quiz that we find as a global quiz.
+                                 if (count($global_quizzes) > 0) {
+                                     foreach ($global_quizzes as $quiz_object) {
+
+                                         // Add the exam.
+                                         $this->api_exam_create($quiz_object);
+                                     }
+                                 }
+
+                                 foreach ($users as $user_object) {
+
+                                     // Get or create the user.
+                                     $this->api_user_info($course_object, $user_object);
+    
+                                     // Make sure the user is enrolled in the course.
+                                     $this->api_course_enroll(get_post($ldCourseId), $user_object);
+                                 }
+                             }
                          }
                      }
                  }

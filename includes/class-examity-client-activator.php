@@ -29,6 +29,7 @@ class Examity_Client_Activator {
 	 *
 	 * @since    0.0.1
 	 */
+
 	public static function activate() {
 
 	}

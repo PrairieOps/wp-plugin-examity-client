@@ -31,6 +31,7 @@ class Examity_Client_Deactivator {
 	 */
 	public static function deactivate() {
 
+            wp_clear_scheduled_hook('examity_client_cron_api_provision');
 	}
 
 }
