@@ -196,9 +196,7 @@ class Examity_Client {
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 
 		$this->loader->add_action( 'examity_client_cron_api_provision', $this, 'api_provision_batch' );
-                // directly calling batch code for debugging.
-		//$this->loader->add_action( 'init', $this, 'examity_client_cron_scheduler' );
-		$this->loader->add_action( 'wp_head', $this, 'api_provision_batch' );
+		$this->loader->add_action( 'init', $this, 'examity_client_cron_scheduler' );
                 $this->loader->add_filter('cron_schedules', $this, 'examity_client_cron_schedules'); 
 
                 $this->loader->add_shortcode('examity-client-login', $this, 'sso_form_shortcode');
@@ -765,10 +763,7 @@ class Examity_Client {
 
              // Schedules the provisioning task to run.
              if (! wp_next_scheduled ( 'examity_client_cron_api_provision' )) {
-             // unscheduling for debugging
-               //wp_schedule_event(time(), 'fiveminutes', 'examity_client_cron_api_provision');
-             } else {
-                wp_clear_scheduled_hook('examity_client_cron_api_provision');
+               wp_schedule_event(time(), 'fiveminutes', 'examity_client_cron_api_provision');
              }
          }
 
