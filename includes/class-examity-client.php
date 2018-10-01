@@ -595,15 +595,16 @@ class Examity_Client {
              }
          }
 
-         public function api_exam_create( $post_object ) {
+         public function api_exam_create( $post_object, $ldCourseId=NULL ) {
 
+             if ($ldCourseId == NULL) {
+                 // LearnDash API call.
+                 // Courses with which this exam is associated.
+                 $ldCourseId = learndash_get_course_id($post_object->ID);
+             }
 
              // Check to see if the author enabled provisioning for the exam.
              $is_enabled = get_post_meta( $post_object->ID, 'examity_client_sfwd_quiz_create', true);
-
-             // LearnDash API call.
-	     // Courses with which this exam is associated
-             $ldCourseId = learndash_get_course_id($post_object->ID);
 
              // Required fields.
              // We need to namespace IDs to avoid collisions in a WordPress Network.
@@ -699,7 +700,7 @@ class Examity_Client {
                  if ($post_object->post_type == 'sfwd-quiz') {
 
                      // Add the exam.
-                     $this->api_exam_create($post_object);
+                     $this->api_exam_create($post_object, $ldCourseId);
 
                  // Do some more checks if this is a course.
                  } elseif ($post_object->post_type == 'sfwd-courses') {
@@ -731,7 +732,7 @@ class Examity_Client {
                                  $quiz_object = get_post($course_step);
 
                                  // Add the exam.
-                                 $this->api_exam_create($quiz_object);
+                                 $this->api_exam_create($quiz_object, $ldCourseId);
                              }
                          }
 
@@ -740,7 +741,7 @@ class Examity_Client {
                              foreach ($global_quizzes as $quiz_object) {
 
                                  // Add the exam.
-                                 $this->api_exam_create($quiz_object);
+                                 $this->api_exam_create($quiz_object, $ldCourseId);
                              }
                          }
                      }
@@ -823,7 +824,7 @@ class Examity_Client {
                                          $quiz_object = get_post($course_step);
 
                                          // Add the exam.
-                                         $this->api_exam_create($quiz_object);
+                                         $this->api_exam_create($quiz_object, $ldCourseId);
                                      }
                                  }
 
@@ -832,7 +833,7 @@ class Examity_Client {
                                      foreach ($global_quizzes as $quiz_object) {
 
                                          // Add the exam.
-                                         $this->api_exam_create($quiz_object);
+                                         $this->api_exam_create($quiz_object, $ldCourseId);
                                      }
                                  }
                                  foreach ($users as $user_object) {
