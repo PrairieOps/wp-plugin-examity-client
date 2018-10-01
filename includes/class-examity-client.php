@@ -732,36 +732,37 @@ class Examity_Client {
                              $users = learndash_get_users_for_course($ldCourseId, null, false);
 
                              if (count($users) > 0) {
+
+                                 // Make sure the associated course exists.
+                                 $this->api_course_create(get_post($ldCourseId));
+
+                                 // Perform provisioning for each quiz that we find as a course step.
+                                 if (count($course_steps) > 0) {
+                                     foreach ($course_steps as $course_step) {
+
+                                         $quiz_object = get_post($course_step);
+
+                                         // Add the exam.
+                                         $this->api_exam_create($quiz_object);
+                                     }
+                                 }
+
+                                 // Perform provisioning for each quiz that we find as a global quiz.
+                                 if (count($global_quizzes) > 0) {
+                                     foreach ($global_quizzes as $quiz_object) {
+
+                                         // Add the exam.
+                                         $this->api_exam_create($quiz_object);
+                                     }
+                                 }
+
                                  foreach ($users as $user_object) {
 
                                      // Get or create the user.
                                      $this->api_user_info($course_object, $user_object);
-
-                                     // Make sure the associated course exists.
-                                     $this->api_course_create(get_post($ldCourseId));
     
                                      // Make sure the user is enrolled in the course.
                                      $this->api_course_enroll(get_post($ldCourseId), $user_object);
-
-                                     // Perform provisioning for each quiz that we find as a course step.
-                                     if (count($course_steps) > 0) {
-                                         foreach ($course_steps as $course_step) {
-
-                                             $quiz_object = get_post($course_step);
-
-                                             // Add the exam.
-                                             $this->api_exam_create($quiz_object);
-                                         }
-                                     }
-
-                                     // Perform provisioning for each quiz that we find as a global quiz.
-                                     if (count($global_quizzes) > 0) {
-                                         foreach ($global_quizzes as $quiz_object) {
-
-                                             // Add the exam.
-                                             $this->api_exam_create($quiz_object);
-                                         }
-                                     }
                                  }
                              }
                          }
