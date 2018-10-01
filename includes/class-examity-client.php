@@ -366,7 +366,8 @@ class Examity_Client {
              $lastName = $user_object->user_lastname;
 
              // Proceed if we have all required fields.
-             if (filter_var($userId, FILTER_VALIDATE_EMAIL) && ($firstName != NULL) && ($lastName != NULL)) {
+             if (filter_var($userId, FILTER_VALIDATE_EMAIL)
+                 && ($firstName != NULL) && ($lastName != NULL)) {
 
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
@@ -428,7 +429,8 @@ class Examity_Client {
 
              // leardash will return a course id of 0 when there isn't a match.
              // Proceed if there is a match for the object and the user has access.
-             if ($ldCourseId > 0 && $has_access && filter_var($userId, FILTER_VALIDATE_EMAIL)) {
+             if (($ldCourseId != NULL) && $has_access
+                 && filter_var($userId, FILTER_VALIDATE_EMAIL)) {
 
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
@@ -478,7 +480,11 @@ class Examity_Client {
 
              // leardash will return a course id of 0 when there isn't a match.
              // Proceed if we have all required fields.
-             if ($ldCourseId > 0 && filter_var($userId, FILTER_VALIDATE_EMAIL) && ($firstName != NULL) && ($lastName != NULL) && ($courseId != NULL) && ($courseName != NULL)) {
+             if (($ldCourseId != NULL) 
+                 && filter_var($userId, FILTER_VALIDATE_EMAIL)
+                 && ($firstName != NULL) && ($lastName != NULL)
+                 && ($courseId != NULL) && ($courseName != NULL)) {
+
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
     
@@ -540,7 +546,9 @@ class Examity_Client {
              // leardash will return a course id of 0 when there isn't a match.
              // Proceed if there is a match for the object, the user has access
              // and we have all required fields.
-             if ($ldCourseId > 0 && $has_access && ($courseId != NULL) && filter_var($userId, FILTER_VALIDATE_EMAIL)) {
+             if (($ldCourseId != NULL) && $has_access && ($courseId != NULL)
+                 && filter_var($userId, FILTER_VALIDATE_EMAIL)) {
+
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
                  
@@ -613,7 +621,11 @@ class Examity_Client {
              // leardash will return a course id of 0 when there isn't a match.
              // Only proceed if provisioning is enabled and there is a match
              // and we have all required fields.
-             if ($is_enabled && $ldCourseId > 0 && ($courseId != NULL) && ($examId != NULL) && ($examName != NULL) && filter_var($examURL, FILTER_VALIDATE_URL) && ($examDuration != NULL) && ($examStartDate != NULL) && ($examEndDate != NULL)) {
+             if ($is_enabled && ($ldCourseId != NULL) && ($courseId != NULL)
+                 && ($examId != NULL) && ($examName != NULL) 
+                 && filter_var($examURL, FILTER_VALIDATE_URL)
+                 && ($examDuration != NULL) && ($examStartDate != NULL)
+                 && ($examEndDate != NULL)) {
 
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
@@ -677,7 +689,7 @@ class Examity_Client {
              // this auth logic, but not all of them do. Wrapping it here
              // keeps us from making API calls when anonymous/unenrolled users
              // browse the site.
-             if ($ldCourseId > 0 && $has_access) {
+             if (($ldCourseId != NULL) && $has_access) {
                  // Perform Examity provisioning if this is a quiz.
                  if ($post_object->post_type == 'sfwd-quiz') {
 
@@ -772,7 +784,7 @@ class Examity_Client {
                      $ldCourseId = learndash_get_course_id($course_object->ID);
 
                      // leardash will return a course id of 0 when there isn't a match.
-                     if ($ldCourseId > 0) {
+                     if (($ldCourseId != NULL)) {
     
                          // LearnDash API call.
                          // Returns array of global quizzes that are associated with the course.
@@ -859,7 +871,7 @@ class Examity_Client {
                  $payload = $this->sso_encrypt($current_user->user_email, $sso_encryption_key, $sso_initialization_vector);
                  $form = '<form action="' . $sso_url . '" method="POST" name="login">
                           <input type="hidden" name="userName" value="' . $payload . '" />
-                          <input class="button wpProQuiz_button" type="submit" name="submit" value="Examity®Access" >
+                          <input class="button wpProQuiz_button" type="submit" name="submit" value="Examity®Access />
                           </form>';
                  return (string)$form;
              }
@@ -932,7 +944,9 @@ class Examity_Client {
              $has_access = sfwd_lms_has_access_fn($post_object->ID, $current_user->ID);
 
              // Perform Examity sign in if this is a course or quiz and the user has access to the object.
-             if (($post_object->post_type == 'sfwd-courses' || $post_object->post_type == 'sfwd-quiz') && $has_access) {
+             if (($post_object->post_type == 'sfwd-courses'
+                 || $post_object->post_type == 'sfwd-quiz') && $has_access) {
+
                  $sso_url = get_option( $this->plugin_name . '_sso_url', 'http://localhost/changeme' );
                  $sso_encryption_key = get_option( $this->plugin_name . '_sso_encryption_key', 'changeme' );
                  $sso_initialization_vector = hex2bin(get_option( $this->plugin_name . '_sso_initialization_vector', '0000000000000000' ));
