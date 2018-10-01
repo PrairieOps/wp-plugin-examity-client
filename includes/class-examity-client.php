@@ -193,10 +193,10 @@ class Examity_Client {
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
-		//$this->loader->add_action( 'wp_enqueue_scripts', $this, 'sso_ajax' );
-		//$this->loader->add_action( 'the_post', $this, 'api_provision_the_post' );
 		$this->loader->add_action( 'examity_client_cron_api_provision', $this, 'api_provision_batch' );
-		$this->loader->add_action( 'the_post', $this, 'debug' );
+
+		$this->loader->add_action( 'init', $this, 'examity_client_cron_scheduler' );
+                $this->loader->add_filter('cron_schedules', $this, 'examity_client_cron_schedules'); 
 
                 $this->loader->add_shortcode('examity-client-login', $this, 'sso_form_shortcode');
 		$this->loader->add_filter( 'init', $this, 'sso_form_shortcode_filter' );
@@ -675,22 +675,29 @@ class Examity_Client {
                  }
              }
          }
+        public function examity_client_cron_schedules( $schedules ) {
 
-         public function debug() {
-         
-            //if (! wp_next_scheduled ( 'examity_client_cron_api_provision' )) {
-              //wp_schedule_event(time(), 'five_minutes', array($this, 'examity_client_cron_api_provision'));
-            //}
+            // Creates custom interval for running provisioning task.
+            $schedules['fiveminutes'] = array(
+                'interval'=> 300,
+                'display'=>  __('Once Every 5 minutes')
+            );
 
-         $checkbatch = wp_get_schedule(array( $this, 'api_provision_batch'));
-         $checkhook = wp_get_schedule('recurring_api_provision');
-         echo "<h1>debug: " . $checkbatch . "</h1>";
-         echo "<h1>debug: " . $checkhook . "</h1>";
+            return $schedules;
 
+        }
 
+         public function examity_client_cron_scheduler() {
+
+             // Schedules the provisioning task to run.
+             if (! wp_next_scheduled ( 'examity_client_cron_api_provision' )) {
+               wp_schedule_event(time(), 'fiveminutes', 'examity_client_cron_api_provision');
+             }
          }
 
          public function api_provision_batch() {
+
+             // Provisions all relevant objects found within all courses.
 
              $courses_args = array(
                  'post_type'   => 'sfwd-courses',

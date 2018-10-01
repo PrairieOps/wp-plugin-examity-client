@@ -30,24 +30,7 @@ class Examity_Client_Activator {
 	 * @since    0.0.1
 	 */
 
-        public static function examity_client_cron_schedules( $schedules=null ) {
-
-            $schedules['five_minutes'] = array(
-                'interval'=> 300,
-                'display'=>  __('Once Every 5 minutes')
-            );
-
-            return $schedules;
-
-        }
-
 	public static function activate() {
-
-            add_filter('cron_schedules', Examity_Client_Activator::examity_client_cron_schedules());
-
-            if (! wp_next_scheduled ( 'examity_client_cron_api_provision' )) {
-              wp_schedule_event(time(), 'five_minutes', 'examity_client_cron_api_provision');
-            }
 
 	}
 
