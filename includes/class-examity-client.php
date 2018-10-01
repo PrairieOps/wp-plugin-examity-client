@@ -543,10 +543,17 @@ class Examity_Client {
              $courseId = get_current_blog_id() . '_'  . $ldCourseId;
              $userId = $user_object->user_email;
 
+             // Not required for this API call, but required for a users in Examity.
+             // If we don't have these, then the user was probably never successfully
+             // Created. If the user doesn't exist, we can't enroll them.
+             $firstName = $user_object->user_firstname;
+             $lastName = $user_object->user_lastname;
+
              // leardash will return a course id of 0 when there isn't a match.
              // Proceed if there is a match for the object, the user has access
              // and we have all required fields.
              if (($ldCourseId != NULL) && $has_access && ($courseId != NULL)
+                 && ($firstName != NULL) && ($lastName != NULL)
                  && filter_var($userId, FILTER_VALIDATE_EMAIL)) {
 
                  $api_access_token = $this->api_access_token();
