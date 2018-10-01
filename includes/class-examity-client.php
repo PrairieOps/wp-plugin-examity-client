@@ -35,6 +35,7 @@ use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7;
 use Psr\Http\Message\ResponseInterface;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\MessageFormatter;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
@@ -299,25 +300,25 @@ class Examity_Client {
                  $client_id = get_option( $this->plugin_name . '_api_client_id', 'changeme' );
                  $secret_key = get_option( $this->plugin_name . '_api_secret_key', 'changeme' );
                  try {
-                 $response = $client->request(
-                     'POST',
-                     'token',
-                     ['json' => [
-                         'clientID' => $client_id,
-                         'secretKey' => $secret_key,
-                     ]]
-                 );
+                     $response = $client->request(
+                         'POST',
+                         'token',
+                         ['json' => [
+                             'clientID' => $client_id,
+                             'secretKey' => $secret_key,
+                         ]]
+                     );
 
-                 $decoded_response = json_decode($response->GetBody(), false);
-                 $api_access_token = $decoded_response->authInfo->access_token;
-                 $api_access_token_datetime = new DateTime($decoded_response->timeStamp);
+                     $decoded_response = json_decode($response->GetBody(), false);
+                     $api_access_token = $decoded_response->authInfo->access_token;
+                     $api_access_token_datetime = new DateTime($decoded_response->timeStamp);
 
-                 // Update the option with the current token.
-                 update_option( $this->plugin_name . '_api_access_token', $api_access_token );
-                 update_option( $this->plugin_name . '_api_access_token_datetime', $api_access_token_datetime );
+                     // Update the option with the current token.
+                     update_option( $this->plugin_name . '_api_access_token', $api_access_token );
+                     update_option( $this->plugin_name . '_api_access_token_datetime', $api_access_token_datetime );
 
-                 // Return the current token.
-                 return $api_access_token;
+                     // Return the current token.
+                     return $api_access_token;
                  } catch (RequestException $e) {
                      $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
                      error_log($requestExceptionMessage);
@@ -333,7 +334,7 @@ class Examity_Client {
              $userId = $user_object->user_email;
 
              // Proceed if we have the required field.
-             if (isset($userId)) {
+             if (filter_var($userId, FILTER_VALIDATE_EMAIL)) {
 
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
@@ -365,7 +366,7 @@ class Examity_Client {
              $lastName = $user_object->user_lastname;
 
              // Proceed if we have all required fields.
-             if (isset($userId) && isset($firstName) && isset($lastName)) {
+             if (filter_var($userId, FILTER_VALIDATE_EMAIL) && isset($firstName) && isset($lastName)) {
 
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
@@ -392,16 +393,22 @@ class Examity_Client {
                  // A not-so-useful async implementation.
                  // We'd need to accumulate like api calls as promises
                  // and then wait for them as a batch for this to be useful.
-                 $promise = $client->sendAsync($request->withBody($body));
-                 $promise->then(
-                     function (ResponseInterface $response) {
-                         return $response;
-                     },
-                     function (RequestException $e) {
-                         error_log($e->getMessage());
-                     }
-                 );
-                 $promise->wait();
+                 try {
+                     $promise = $client->sendAsync($request->withBody($body));
+                     $promise->then(
+                         function (ResponseInterface $response) {
+                             return $response;
+                         },
+                         function (RequestException $e) {
+                             error_log($e->getMessage());
+                         }
+                     );
+                     $promise->wait();
+                 } catch (ClientException $e) {
+                     error_log($e->getMessage());
+                 } catch (\Exception $e) {
+                     error_log($e);
+                 }
              }
 
          }
@@ -421,7 +428,7 @@ class Examity_Client {
 
              // leardash will return a course id of 0 when there isn't a match.
              // Proceed if there is a match for the object and the user has access.
-             if ($ldCourseId > 0 && $has_access && isset($userId)) {
+             if ($ldCourseId > 0 && $has_access && filter_var($userId, FILTER_VALIDATE_EMAIL)) {
 
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
@@ -444,6 +451,8 @@ class Examity_Client {
                          return $response;
                      }
                  } catch (RequestException $e) {
+                     error_log($e->getMessage());
+                 } catch (ClientException $e) {
                      error_log($e->getMessage());
                  } catch (\Exception $e) {
                      error_log($e);
@@ -469,7 +478,7 @@ class Examity_Client {
 
              // leardash will return a course id of 0 when there isn't a match.
              // Proceed if we have all required fields.
-             if ($ldCourseId > 0 && isset($userId) && isset($firstName) && isset($lastName) && isset($courseId) && isset($courseName)) {
+             if ($ldCourseId > 0 && filter_var($userId, FILTER_VALIDATE_EMAIL) && isset($firstName) && isset($lastName) && isset($courseId) && isset($courseName)) {
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
     
@@ -495,6 +504,7 @@ class Examity_Client {
                  // A not-so-useful async implementation.
                  // We'd need to accumulate like api calls as promises
                  // and then wait for them as a batch for this to be useful.
+                 try {
                  $promise = $client->sendAsync($request->withBody($body));
                  $promise->then(
                      function (ResponseInterface $response) {
@@ -505,6 +515,11 @@ class Examity_Client {
                      }
                  );
                  $promise->wait();
+                 } catch (ClientException $e) {
+                     error_log($e->getMessage());
+                 } catch (\Exception $e) {
+                     error_log($e);
+                 }
              }
          }
 
@@ -525,7 +540,7 @@ class Examity_Client {
              // leardash will return a course id of 0 when there isn't a match.
              // Proceed if there is a match for the object, the user has access
              // and we have all required fields.
-             if ($ldCourseId > 0 && $has_access && isset($courseId) && isset($userId)) {
+             if ($ldCourseId > 0 && $has_access && isset($courseId) && filter_var($userId, FILTER_VALIDATE_EMAIL)) {
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
                  
@@ -548,16 +563,22 @@ class Examity_Client {
                  // A not-so-useful async implementation.
                  // We'd need to accumulate like api calls as promises
                  // and then wait for them as a batch for this to be useful.
-                 $promise = $client->sendAsync($request->withBody($body));
-                 $promise->then(
-                     function (ResponseInterface $response) {
-                         return $response;
-                     },
-                     function (RequestException $e) {
-                         error_log($e->getMessage());
-                     }
-                 );
-                 $promise->wait();
+                 try {
+                     $promise = $client->sendAsync($request->withBody($body));
+                     $promise->then(
+                         function (ResponseInterface $response) {
+                             return $response;
+                         },
+                         function (RequestException $e) {
+                             error_log($e->getMessage());
+                         }
+                     );
+                     $promise->wait();
+                 } catch (ClientException $e) {
+                     error_log($e->getMessage());
+                 } catch (\Exception $e) {
+                     error_log($e);
+                 }
              }
          }
 
@@ -592,7 +613,7 @@ class Examity_Client {
              // leardash will return a course id of 0 when there isn't a match.
              // Only proceed if provisioning is enabled and there is a match
              // and we have all required fields.
-             if ($is_enabled && $ldCourseId > 0 && isset($courseId) && isset($examId) && isset($examName) && isset($examURL) && isset($examDuration) && isset($examStartDate) && isset($examEndDate)) {
+             if ($is_enabled && $ldCourseId > 0 && isset($courseId) && isset($examId) && isset($examName) && filter_var($examURL, FILTER_VALIDATE_URL) && isset($examDuration) && isset($examStartDate) && isset($examEndDate)) {
 
                  $api_access_token = $this->api_access_token();
                  $client = $this->api_client();
@@ -620,16 +641,22 @@ class Examity_Client {
                  // A not-so-useful async implementation.
                  // We'd need to accumulate like api calls as promises
                  // and then wait for them as a batch for this to be useful.
-                 $promise = $client->sendAsync($request->withBody($body));
-                 $promise->then(
-                     function (ResponseInterface $response) {
-                         return $response;
-                     },
-                     function (RequestException $e) {
-                         error_log($e->getMessage());
-                     }
-                 );
-                 $promise->wait();
+                 try {
+                     $promise = $client->sendAsync($request->withBody($body));
+                     $promise->then(
+                         function (ResponseInterface $response) {
+                             return $response;
+                         },
+                         function (RequestException $e) {
+                             error_log($e->getMessage());
+                         }
+                     );
+                     $promise->wait();
+                 } catch (ClientException $e) {
+                     error_log($e->getMessage());
+                 } catch (\Exception $e) {
+                     error_log($e);
+                 }
              }
          }
 
@@ -764,7 +791,11 @@ class Examity_Client {
                              $users_args = array(
                                  'fields'   => 'all',
                              );
-                             $users = learndash_get_users_for_course($ldCourseId, $users_args, false);
+                             $course_user_query = learndash_get_users_for_course($ldCourseId, $users_args, false);
+
+                             if ( $course_user_query instanceof WP_User_Query ) {
+                                 $users = $course_user_query->get_results();
+                             }
 
                              if (count($users) > 0) {
 
@@ -790,9 +821,7 @@ class Examity_Client {
                                          $this->api_exam_create($quiz_object);
                                      }
                                  }
-//print_r($users);
                                  foreach ($users as $user_object) {
-echo $user_object->ID;
 
                                      // Get or create the user.
                                      $this->api_user_info($course_object, $user_object);
