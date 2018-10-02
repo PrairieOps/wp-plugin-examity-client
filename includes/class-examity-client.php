@@ -245,7 +245,16 @@ class Examity_Client {
 
         public function api_client() {
 
-                $stack = HandlerStack::create();
+            $stack = HandlerStack::create();
+            $base_uri = get_option( $this->plugin_name . '_api_url', 'http://localhost/changeme' );
+            $timeout = get_option( $this->plugin_name . '_api_timeout', 1 );
+
+            $headers = [
+                'User-Agent' => $this->plugin_name . '/' . $this->version,
+                'Content-Type' => 'application/json',
+            ];
+
+            if ('WP_DEBUG' === 'true') {
                 $logger = new Logger('Logger');
                 $logger->pushHandler(new StreamHandler(dirname( __FILE__ ) . '/debug.log'), Logger::DEBUG);
                 $stack->push(
@@ -255,8 +264,6 @@ class Examity_Client {
                     )
                 );
 
-                $base_uri = get_option( $this->plugin_name . '_api_url', 'http://localhost/changeme' );
-                $timeout = get_option( $this->plugin_name . '_api_timeout', 1 );
                 $client = new Client([
                     // log requests.
                     'handler' => $stack,
@@ -264,13 +271,19 @@ class Examity_Client {
                     'base_uri' => $base_uri,
                     // You can set any number of default request options.
                     'timeout'  => (float)$timeout,
-                    'headers' => [
-                        'User-Agent' => $this->plugin_name . '/' . $this->version,
-                        'Content-Type' => 'application/json',
-                    ]
+                    'headers' => $headers
                 ]);
+            } else {
+                $client = new Client([
+                    // Base URI is used with relative requests
+                    'base_uri' => $base_uri,
+                    // You can set any number of default request options.
+                    'timeout'  => (float)$timeout,
+                    'headers' => $headers
+                ]);
+            }
 
-                return $client;
+            return $client;
         }
 
         public function api_access_token() {
