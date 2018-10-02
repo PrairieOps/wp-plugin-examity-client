@@ -245,7 +245,6 @@ class Examity_Client {
 
         public function api_client() {
 
-            $stack = HandlerStack::create();
             $base_uri = get_option( $this->plugin_name . '_api_url', 'http://localhost/changeme' );
             $timeout = get_option( $this->plugin_name . '_api_timeout', 1 );
 
@@ -254,7 +253,8 @@ class Examity_Client {
                 'Content-Type' => 'application/json',
             ];
 
-            if ('WP_DEBUG' === 'true') {
+            if (defined('WP_DEBUG') && true === WP_DEBUG) {
+                $stack = HandlerStack::create();
                 $logger = new Logger('Logger');
                 $logger->pushHandler(new StreamHandler(dirname( __FILE__ ) . '/debug.log'), Logger::DEBUG);
                 $stack->push(
@@ -779,10 +779,20 @@ class Examity_Client {
 
          public function examity_client_cron_scheduler() {
 
-             // Schedules the provisioning task to run.
-             if (! wp_next_scheduled ( 'examity_client_cron_api_provision' )) {
-               $interval = (int)get_option( $this->plugin_name . '_cron_interval', 43200 );
-               wp_schedule_single_event(time() + $interval, 'examity_client_cron_api_provision');
+             // If the configured interval is sooner than the next scheduled job, unschedule it.
+             $interval = (int)get_option( $this->plugin_name . '_cron_interval', 43200 );
+             $scheduled = wp_next_scheduled( 'examity_client_cron_api_provision' );
+             $schedule = time() + $interval;
+
+             if ($scheduled != NULL && ($scheduled > $schedule)) {
+                 if (wp_next_scheduled ( 'examity_client_cron_api_provision' )) {
+                     wp_clear_scheduled_hook('examity_client_cron_api_provision');
+                 }
+             }
+
+             if ($scheduled == NULL) {
+                 // Schedules the provisioning task to run.
+                 wp_schedule_single_event(time() + $interval, 'examity_client_cron_api_provision');
              }
          }
 
