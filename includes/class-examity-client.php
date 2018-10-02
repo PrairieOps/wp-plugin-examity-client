@@ -874,7 +874,7 @@ class Examity_Client {
                  $payload = $this->sso_encrypt($current_user->user_email, $sso_encryption_key, $sso_initialization_vector);
                  $form = '<form action="' . $sso_url . '" method="POST" name="login">
                           <input type="hidden" name="userName" value="' . $payload . '" />
-                          <input class="button wpProQuiz_button" type="submit" name="submit" value="Examity®Access />
+                          <input class="button wpProQuiz_button" type="submit" name="submit" value="Examity®Access" />
                           </form>';
                  return (string)$form;
              }
