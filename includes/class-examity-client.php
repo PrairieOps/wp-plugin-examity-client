@@ -197,7 +197,6 @@ class Examity_Client {
 
 		$this->loader->add_action( 'examity_client_cron_api_provision', $this, 'api_provision_batch' );
 		$this->loader->add_action( 'init', $this, 'examity_client_cron_scheduler' );
-                $this->loader->add_filter('cron_schedules', $this, 'examity_client_cron_schedules'); 
 
                 $this->loader->add_shortcode('examity-client-login', $this, 'sso_form_shortcode');
 		$this->loader->add_filter( 'init', $this, 'sso_form_shortcode_filter' );
@@ -279,7 +278,9 @@ class Examity_Client {
              // If the current access token is more than 55 minutes old, get a new one.
              $epoch =  new DateTime('1969-12-31T11:59:59Z');
              $api_access_token_datetime = get_option( $this->plugin_name . '_api_access_token_datetime', $epoch );
-             $now = new DateTime('NOW');
+             $tz = new DateTimeZone(get_option('timezone_string'));
+             $now = new DateTime('now', $tz);
+
              $diff = ($now->getTimeStamp() - $api_access_token_datetime->getTimeStamp())/60;
              if($diff > 55) {
                  delete_option( $this->plugin_name . '_api_access_token' );
@@ -613,6 +614,9 @@ class Examity_Client {
 
              // Set the course name to be the post title.
 	     $examName = get_the_title($post_object);
+             // Examity doesn't like HTML entities here.
+             $examName = preg_replace('/&#?[a-z0-9]+;/i', '', $examName);
+             $examName = str_replace('  ', ' ', $examName);
 
              // The raw quiz permalink has an unresolved token.
 	     $quiz_permalink = get_post_permalink($post_object, true, false);
@@ -621,8 +625,19 @@ class Examity_Client {
              // Exams are limited to 2 hours, plus 15 minutes grace.
              // They are always open.
 	     $examDuration = 135;
-             $examStartDate = '1969-12-31T23:59Z'; 
-             $examEndDate = '2999-12-31T23:59Z'; 
+             $tz = new DateTimeZone(get_option('timezone_string'));
+             $now = new DateTime('now', $tz);
+
+             // For whatever reason, we're getting local time
+             // instead of UTC from DateTime now. Correct the offset.
+             $offset = $tz->getOffset($now);
+             $invert_offset = sprintf("%+d hours", (0 - ($offset/3600)));
+             $now->modify($invert_offset);
+
+             $now_plus_month = clone $now;
+             $now_plus_month->modify('+5 years');
+             $examStartDate = $now->format(DateTime::ISO8601); 
+             $examEndDate = $now_plus_month->format(DateTime::ISO8601);
 
              // leardash will return a course id of 0 when there isn't a match.
              // Only proceed if provisioning is enabled and there is a match
@@ -748,23 +763,15 @@ class Examity_Client {
                  }
              }
          }
-        public function examity_client_cron_schedules( $schedules ) {
-
-            // Creates custom interval for running provisioning task.
-            $schedules['fiveminutes'] = array(
-                'interval'=> 300,
-                'display'=>  __('Once Every 5 minutes')
-            );
-
-            return $schedules;
-
-        }
 
          public function examity_client_cron_scheduler() {
 
              // Schedules the provisioning task to run.
              if (! wp_next_scheduled ( 'examity_client_cron_api_provision' )) {
-               wp_schedule_event(time(), 'fiveminutes', 'examity_client_cron_api_provision');
+               $interval = (int)get_option( $this->plugin_name . '_cron_interval', 43200 );
+               error_log(time()+$interval);
+               error_log($interval);
+               wp_schedule_single_event(time() + $interval, 'examity_client_cron_api_provision');
              }
          }
 

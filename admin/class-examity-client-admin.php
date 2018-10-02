@@ -143,6 +143,17 @@ class Examity_Client_Admin {
         );
     
         register_setting($this->plugin_name . '_general-section', $this->plugin_name . '_api_timeout');
+    
+        add_settings_field(
+            $this->plugin_name . '_cron_interval',
+            __("API Provisioning Recurring Task Inverval (seconds):", 'examity-client'),
+            array( $this, 'examity_client_cron_interval_element' ),
+            $this->plugin_name,
+            $this->plugin_name . '_general-section',
+            array( 'label_for' => $this->plugin_name . '_cron_interval' )
+        );
+    
+        register_setting($this->plugin_name . '_general-section', $this->plugin_name . '_cron_interval');
 
         add_settings_field(
             $this->plugin_name . '_api_client_id',
@@ -213,6 +224,11 @@ class Examity_Client_Admin {
     public function examity_client_api_timeout_element(){
         $timeout = get_option( $this->plugin_name . '_api_timeout', 1 );
         echo '<input type="number" name="' . $this->plugin_name . '_api_timeout' . '" id="' . $this->plugin_name . '_api_timeout' . '" value="' . $timeout . '"> ';
+    }
+
+    public function examity_client_cron_interval_element(){
+        $inverval = get_option( $this->plugin_name . '_cron_interval', 43200 );
+        echo '<input type="number" name="' . $this->plugin_name . '_cron_interval' . '" id="' . $this->plugin_name . '_cron_interval' . '" value="' . $inverval . '"> ';
     }
 
     public function examity_client_api_client_id_element(){
