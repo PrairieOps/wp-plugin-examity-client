@@ -769,8 +769,6 @@ class Examity_Client {
              // Schedules the provisioning task to run.
              if (! wp_next_scheduled ( 'examity_client_cron_api_provision' )) {
                $interval = (int)get_option( $this->plugin_name . '_cron_interval', 43200 );
-               error_log(time()+$interval);
-               error_log($interval);
                wp_schedule_single_event(time() + $interval, 'examity_client_cron_api_provision');
              }
          }
