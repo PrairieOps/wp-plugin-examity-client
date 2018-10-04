@@ -474,17 +474,23 @@ class Examity_Client {
              }
          }
 
-         public function api_course_create( $post_object ) {
+         public function api_course_create( $post_object, $ldCourseId=NULL, $user_object=NULL ) {
 
-             // We need to namespace IDs to avoid collisions in a WordPress Network.
-             $ldCourseId = learndash_get_course_id($post_object->ID);
+             if ($ldCourseId == NULL) {
+                 // LearnDash API call.
+                 // Courses with which this exam is associated.
+                 $ldCourseId = learndash_get_course_id($post_object->ID);
+             }
+
+             if ($user_object == NULL) {
+                 // Set the examity instructor to the post author by default.
+                 $user_object = get_user_by('id', $post_object->post_author);
+             }
 
              // Required fields.
-             // Set the examity instructor to be the post author.
-             $instructor = get_user_by('id', $post_object->post_author);
-             $userId = $instructor->user_email;
-             $firstName =  $instructor->user_firstname;
-             $lastName = $instructor->user_lastname;
+             $userId = $user_object->user_email;
+             $firstName =  $user_object->user_firstname;
+             $lastName = $user_object->user_lastname;
              // Namespace the course id.
              $courseId = get_current_blog_id() . '_'  . $ldCourseId;
              // Set the course name to be the post title.
@@ -511,6 +517,7 @@ class Examity_Client {
                      'lastName' => $lastName,
                      'emailAddress' => $userId
                  ];
+
                  $body = Psr7\stream_for(json_encode($json));
     
                  $request = new Psr7\Request(
@@ -843,7 +850,7 @@ class Examity_Client {
                              if (count($users) > 0) {
 
                                  // Make sure the associated course exists.
-                                 $this->api_course_create(get_post($ldCourseId));
+                                 $this->api_course_create($course_object, $ldCourseId);
 
                                  // Perform provisioning for each quiz that we find as a course step.
                                  if (count($course_steps) > 0) {
