@@ -291,7 +291,11 @@ class Examity_Client {
              // If the current access token is more than 55 minutes old, get a new one.
              $epoch =  new DateTime('1969-12-31T11:59:59Z');
              $api_access_token_datetime = get_option( $this->plugin_name . '_api_access_token_datetime', $epoch );
-             $tz = new DateTimeZone(get_option('timezone_string'));
+             try {
+                 $tz = new DateTimeZone(get_option('timezone_string'));
+             } catch(Exception $e) {
+                 $tz = date_default_timezone_get();
+             }
              $now = new DateTime('now', $tz);
 
              $diff = ($now->getTimeStamp() - $api_access_token_datetime->getTimeStamp())/60;
@@ -645,7 +649,11 @@ class Examity_Client {
              // Exams are limited to 2 hours, plus 15 minutes grace.
              // They are always open.
 	     $examDuration = 135;
-             $tz = new DateTimeZone(get_option('timezone_string'));
+             try {
+                 $tz = new DateTimeZone(get_option('timezone_string'));
+             } catch(Exception $e) {
+                 $tz = date_default_timezone_get();
+             }
              $now = new DateTime('now', $tz);
 
              // For whatever reason, we're getting local time
