@@ -294,7 +294,7 @@ class Examity_Client {
              try {
                  $tz = new DateTimeZone(get_option('timezone_string'));
              } catch(Exception $e) {
-                 $tz = date_default_timezone_get();
+                 $tz = new DateTimeZone(date_default_timezone_get());
              }
              $now = new DateTime('now', $tz);
 
@@ -652,7 +652,7 @@ class Examity_Client {
              try {
                  $tz = new DateTimeZone(get_option('timezone_string'));
              } catch(Exception $e) {
-                 $tz = date_default_timezone_get();
+                 $tz = new DateTimeZone(date_default_timezone_get());
              }
              $now = new DateTime('now', $tz);
 
