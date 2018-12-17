@@ -293,7 +293,7 @@ class Examity_Client {
              $api_access_token_datetime = get_option( $this->plugin_name . '_api_access_token_datetime', $epoch );
              try {
                  $tz = new DateTimeZone(get_option('timezone_string'));
-             } catch(Exception $e) {
+             } catch(\Exception $e) {
                  $tz = new DateTimeZone(date_default_timezone_get());
              }
              $now = new DateTime('now', $tz);
@@ -651,7 +651,7 @@ class Examity_Client {
 	     $examDuration = 135;
              try {
                  $tz = new DateTimeZone(get_option('timezone_string'));
-             } catch(Exception $e) {
+             } catch(\Exception $e) {
                  $tz = new DateTimeZone(date_default_timezone_get());
              }
              $now = new DateTime('now', $tz);
