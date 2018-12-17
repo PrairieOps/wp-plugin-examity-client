@@ -336,8 +336,7 @@ class Examity_Client {
                      // Return the current token.
                      return $api_access_token;
                  } catch (RequestException $e) {
-                     $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
-                     error_log($requestExceptionMessage);
+                     error_log($e->getMessage());
                  } catch (\Exception $e) {
                      error_log($e);
                  }
@@ -366,8 +365,7 @@ class Examity_Client {
 
                      return $response;
                  } catch (RequestException $e) {
-                     $requestExceptionMessage = RequestExceptionMessage::fromRequestException($e);
-                     error_log($requestExceptionMessage);
+                     error_log($e->getMessage());
                  } catch (\Exception $e) {
                      error_log($e);
                  }
