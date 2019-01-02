@@ -171,9 +171,9 @@ class Examity_Client {
 	private function define_admin_hooks() {
 
 		$plugin_admin = new Examity_Client_Admin( $this->get_examity_client(), $this->get_version() );
-
-		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
-		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+                // We currently only have placeholder css and js.
+		//$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
+		//$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
                 $this->loader->add_action( 'admin_menu', $plugin_admin, 'define_admin_page' );
                 $this->loader->add_action( 'admin_init', $plugin_admin, 'register_setting' );
                 $this->loader->add_action( 'add_meta_boxes', $this, 'examity_client_meta' );
@@ -191,9 +191,9 @@ class Examity_Client {
 	private function define_public_hooks() {
 
 		$plugin_public = new Examity_Client_Public( $this->get_examity_client(), $this->get_version() );
-
-		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
-		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
+                // We currently only have placeholder css and js.
+		//$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
+		//$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 
 		$this->loader->add_action( 'examity_client_cron_api_provision', $this, 'api_provision_batch' );
 		$this->loader->add_action( 'init', $this, 'examity_client_cron_scheduler' );
