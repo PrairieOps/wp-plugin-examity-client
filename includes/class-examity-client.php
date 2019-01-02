@@ -792,20 +792,25 @@ class Examity_Client {
 
          public function examity_client_cron_scheduler() {
 
+	     // If the next scheduled job is the old style that doesn't use site id for uniqueness, unschedule it.
+	     if (wp_next_scheduled ( 'examity_client_cron_api_provision' )) {
+	         wp_clear_scheduled_hook('examity_client_cron_api_provision');
+	     }
+
              // If the configured interval is sooner than the next scheduled job, unschedule it.
              $interval = (int)get_option( $this->plugin_name . '_cron_interval', 43200 );
-             $scheduled = wp_next_scheduled( 'examity_client_cron_api_provision' );
+             $scheduled = wp_next_scheduled( 'examity_client_cron_api_provision_' . get_current_blog_id() );
              $schedule = time() + $interval;
 
              if ($scheduled != NULL && ($scheduled > $schedule)) {
-                 if (wp_next_scheduled ( 'examity_client_cron_api_provision' )) {
-                     wp_clear_scheduled_hook('examity_client_cron_api_provision');
+                 if (wp_next_scheduled ( 'examity_client_cron_api_provision_' . get_current_blog_id() )) {
+                     wp_clear_scheduled_hook('examity_client_cron_api_provision_' . get_current_blog_id());
                  }
              }
 
              if ($scheduled == NULL) {
                  // Schedules the provisioning task to run.
-                 wp_schedule_single_event(time() + $interval, 'examity_client_cron_api_provision');
+                 wp_schedule_single_event(time() + $interval, 'examity_client_cron_api_provision_' . get_current_blog_id());
              }
          }
 
