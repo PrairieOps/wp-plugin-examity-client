@@ -195,7 +195,7 @@ class Examity_Client {
 		//$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		//$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 
-		$this->loader->add_action( 'examity_client_cron_api_provision', $this, 'api_provision_batch' );
+		$this->loader->add_action( 'examity_client_cron_api_provision_' . get_current_blog_id(), $this, 'api_provision_batch' );
 		$this->loader->add_action( 'init', $this, 'examity_client_cron_scheduler' );
 
                 $this->loader->add_shortcode('examity-client-login', $this, 'sso_form_shortcode');
@@ -804,7 +804,7 @@ class Examity_Client {
 
              if ($scheduled != NULL && ($scheduled > $schedule)) {
                  if (wp_next_scheduled ( 'examity_client_cron_api_provision_' . get_current_blog_id() )) {
-                     wp_clear_scheduled_hook('examity_client_cron_api_provision_' . get_current_blog_id());
+                     wp_clear_scheduled_hook('examity_client_cron_api_provision_' . get_current_blog_id() );
                  }
              }
 
