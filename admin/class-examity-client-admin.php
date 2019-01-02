@@ -118,7 +118,7 @@ class Examity_Client_Admin {
         add_settings_section(
             $this->plugin_name . '_general-section',
             __( 'General', 'examity-client' ),
-            array( $this, $this->plugin_name . '_general_line' ),
+            array( $this, 'examity_client_general_line' ),
             $this->plugin_name
         );
     
