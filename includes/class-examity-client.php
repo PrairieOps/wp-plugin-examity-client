@@ -806,7 +806,7 @@ class Examity_Client {
     public function examity_client_cron_scheduler() {
 
         // If the configured interval is sooner than the next scheduled job, unschedule it.
-        $interval = (int)get_option( $this->plugin_name . '_cron_interval');
+        $interval = (int)get_option( $this->plugin_name . '_cron_interval', 43200);
         $scheduled = wp_next_scheduled( 'examity_client_cron_api_provision' );
         $schedule = time() + $interval;
 
