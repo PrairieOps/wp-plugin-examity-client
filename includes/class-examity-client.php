@@ -826,7 +826,7 @@ class Examity_Client {
             }
 
             // If the configured interval is sooner than the next scheduled job, unschedule it.
-            $interval = (int)get_blog_option( $blog_id, $this->plugin_name . '_cron_interval', 43200 );
+            $interval = (int)get_blog_option( $blog_id, $this->plugin_name . '_cron_interval');
             $scheduled = wp_next_scheduled( 'examity_client_cron_api_provision_' . $blog_id );
             $schedule = time() + $interval;
 
@@ -836,7 +836,7 @@ class Examity_Client {
                 }
             }
 
-            if ($scheduled == NULL) {
+            if ($interval != NULL && $scheduled == NULL) {
                 // Schedules the provisioning task to run.
                 wp_schedule_single_event(time() + $interval, 'examity_client_cron_api_provision_' . $blog_id);
             }
