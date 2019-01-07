@@ -247,11 +247,10 @@ class Examity_Client {
     public function api_client() {
 
         $blog_id = get_current_blog_id();
+        $base_uri = get_blog_option( $blog_id, $this->plugin_name . '_api_url' );
+        $timeout = get_blog_option( $blog_id, $this->plugin_name . '_api_timeout' );
 
-        if ($blog_id  != NULL) {
-
-            $base_uri = get_blog_option( $blog_id, $this->plugin_name . '_api_url', 'http://localhost/changeme' );
-            $timeout = get_blog_option( $blog_id, $this->plugin_name . '_api_timeout', 1 );
+        if ($blog_id  != NULL && $base_uri != NULL && timeout != NULL) {
 
             $headers = [
                 'User-Agent' => $this->plugin_name . '/' . $this->version,
@@ -314,17 +313,17 @@ class Examity_Client {
                 delete_option( $this->plugin_name . '_api_access_datetime' );
             }
 
-            // Try to pull the token from options.
+            // Try to pull the token and credentials from options.
             $api_access_token = get_blog_option( $blog_id, $this->plugin_name . '_api_access_token' );
+            $client_id = get_blog_option( $blog_id, $this->plugin_name . '_api_client_id' );
+            $secret_key = get_blog_option( $blog_id, $this->plugin_name . '_api_secret_key' );
 
-            // Return it if it's there.
+            // Return the token if it's there.
             if($api_access_token) {
                 return $api_access_token;
             // Otherwise post credentials to get a token.
-            } else {
+            } elseif ($client_id != NULL && $secret_key !=NULL) {
                 $client = $this->api_client();
-                $client_id = get_blog_option( $blog_id, $this->plugin_name . '_api_client_id', 'changeme' );
-                $secret_key = get_blog_option( $blog_id, $this->plugin_name . '_api_secret_key', 'changeme' );
                 try {
                     $response = $client->request(
                         'POST',
