@@ -190,13 +190,12 @@ class Examity_Client {
      */
     private function define_public_hooks() {
 
-        $blog_id = get_current_blog_id();
         $plugin_public = new Examity_Client_Public( $this->get_examity_client(), $this->get_version() );
         // We currently only have placeholder css and js.
         //$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
         //$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 
-        $this->loader->add_action( 'examity_client_cron_api_provision_' . $blog_id, $this, 'api_provision_batch' );
+        $this->loader->add_action( 'examity_client_cron_api_provision', $this, 'api_provision_batch' );
         $this->loader->add_action( 'init', $this, 'examity_client_cron_scheduler' );
 
         $this->loader->add_shortcode('examity-client-login', $this, 'sso_form_shortcode');
@@ -246,11 +245,10 @@ class Examity_Client {
 
     public function api_client() {
 
-        $blog_id = get_current_blog_id();
-        $base_uri = get_blog_option( $blog_id, $this->plugin_name . '_api_url' );
-        $timeout = get_blog_option( $blog_id, $this->plugin_name . '_api_timeout' );
+        $base_uri = get_option( $this->plugin_name . '_api_url' );
+        $timeout = get_option( $this->plugin_name . '_api_timeout' );
 
-        if ($blog_id  != NULL && $base_uri != NULL && timeout != NULL) {
+        if ($base_uri != NULL && timeout != NULL) {
 
             $headers = [
                 'User-Agent' => $this->plugin_name . '/' . $this->version,
@@ -293,13 +291,9 @@ class Examity_Client {
 
     public function api_access_token() {
 
-        $blog_id = get_current_blog_id();
-
-        if ($blog_id  != NULL) {
-
             // If the current access token is more than 55 minutes old, get a new one.
             $epoch =  new DateTime('1969-12-31T11:59:59Z');
-            $api_access_token_datetime = get_blog_option( $blog_id, $this->plugin_name . '_api_access_token_datetime', $epoch );
+            $api_access_token_datetime = get_option( $this->plugin_name . '_api_access_token_datetime', $epoch );
             try {
                 $tz = new DateTimeZone(get_option('timezone_string'));
             } catch(\Exception $e) {
@@ -314,9 +308,9 @@ class Examity_Client {
             }
 
             // Try to pull the token and credentials from options.
-            $api_access_token = get_blog_option( $blog_id, $this->plugin_name . '_api_access_token' );
-            $client_id = get_blog_option( $blog_id, $this->plugin_name . '_api_client_id' );
-            $secret_key = get_blog_option( $blog_id, $this->plugin_name . '_api_secret_key' );
+            $api_access_token = get_option( $this->plugin_name . '_api_access_token' );
+            $client_id = get_option( $this->plugin_name . '_api_client_id' );
+            $secret_key = get_option( $this->plugin_name . '_api_secret_key' );
 
             // Return the token if it's there.
             if($api_access_token) {
@@ -350,7 +344,6 @@ class Examity_Client {
                     error_log($e);
                 }
             }
-        }
     }
 
     public function api_user_del( $user_object ) {
@@ -486,10 +479,11 @@ class Examity_Client {
         }
     }
 
-    public function api_course_create( $blog_id=NULL, $post_object, $ldCourseId=NULL, $user_object=NULL ) {
+    public function api_course_create( $post_object, $ldCourseId=NULL, $user_object=NULL ) {
 
-        if ($blog_id  != NULL) {
+        $blog_id = get_current_blog_id();
 
+        if ($blog_id != NULL) {
             if ($ldCourseId == NULL) {
                 // LearnDash API call.
                 // Courses with which this exam is associated.
@@ -564,10 +558,10 @@ class Examity_Client {
     }
 
 
-    public function api_course_enroll( $blog_id=NULL, $post_object, $user_object ) {
+    public function api_course_enroll( $post_object, $user_object ) {
+        $blog_id = get_current_blog_id();
 
-        if ($blog_id  != NULL) {
-
+        if ($blog_id != NULL) {
             // LearnDash API call.
             // returns true if the user has access to this learndash object.
             $has_access = sfwd_lms_has_access_fn($post_object->ID, $user_object->ID);
@@ -634,10 +628,10 @@ class Examity_Client {
         }
     }
 
-    public function api_exam_create( $blog_id=NULL, $post_object, $ldCourseId=NULL ) {
+    public function api_exam_create( $post_object, $ldCourseId=NULL ) {
+        $blog_id = get_current_blog_id();
 
-        if ($blog_id  != NULL) {
-
+        if ($blog_id != NULL) {
             if ($ldCourseId == NULL) {
                 // LearnDash API call.
                 // Courses with which this exam is associated.
@@ -742,10 +736,6 @@ class Examity_Client {
 
         $current_user = wp_get_current_user();
 
-        $blog_id = get_current_blog_id();
-
-        if ($blog_id  != NULL) {
-
             // LearnDash API call.
             // returns true if the user has access to this learndash object.
             $has_access = sfwd_lms_has_access_fn($post_object->ID, $current_user->ID);
@@ -764,7 +754,7 @@ class Examity_Client {
                 if ($post_object->post_type == 'sfwd-quiz') {
 
                     // Add the exam.
-                    $this->api_exam_create($blog_id, $post_object, $ldCourseId);
+                    $this->api_exam_create($post_object, $ldCourseId);
 
                 // Do some more checks if this is a course.
                 } elseif ($post_object->post_type == 'sfwd-courses') {
@@ -784,10 +774,10 @@ class Examity_Client {
                         $this->api_user_info($post_object, $current_user);
 
                         // Make sure the associated course exists.
-                        $this->api_course_create($blog_id, get_post($ldCourseId));
+                        $this->api_course_create(get_post($ldCourseId));
 
                         // Make sure the user is enrolled in the course.
-                        $this->api_course_enroll($blog_id, get_post($ldCourseId), $current_user);
+                        $this->api_course_enroll(get_post($ldCourseId), $current_user);
 
                         // Perform provisioning for each quiz that we find as a course step.
                         if (count($course_steps) > 0) {
@@ -796,7 +786,7 @@ class Examity_Client {
                                 $quiz_object = get_post($course_step);
 
                                 // Add the exam.
-                                $this->api_exam_create($blog_id, $quiz_object, $ldCourseId);
+                                $this->api_exam_create($quiz_object, $ldCourseId);
                             }
                         }
 
@@ -805,51 +795,36 @@ class Examity_Client {
                             foreach ($global_quizzes as $quiz_object) {
 
                                 // Add the exam.
-                                $this->api_exam_create($blog_id, $quiz_object, $ldCourseId);
+                                $this->api_exam_create($quiz_object, $ldCourseId);
                             }
                         }
                     }
                 }
             }
-        }
     }
 
     public function examity_client_cron_scheduler() {
 
-        $blog_id = get_current_blog_id();
+        // If the configured interval is sooner than the next scheduled job, unschedule it.
+        $interval = (int)get_option( $this->plugin_name . '_cron_interval');
+        $scheduled = wp_next_scheduled( 'examity_client_cron_api_provision' );
+        $schedule = time() + $interval;
 
-        if ($blog_id  != NULL) {
-
-            // If the next scheduled job is the old style that doesn't use site id for uniqueness, unschedule it.
+        if ($scheduled != NULL && ($scheduled > $schedule)) {
             if (wp_next_scheduled ( 'examity_client_cron_api_provision' )) {
-                wp_clear_scheduled_hook('examity_client_cron_api_provision');
+                wp_clear_scheduled_hook('examity_client_cron_api_provision' );
             }
+        }
 
-            // If the configured interval is sooner than the next scheduled job, unschedule it.
-            $interval = (int)get_blog_option( $blog_id, $this->plugin_name . '_cron_interval');
-            $scheduled = wp_next_scheduled( 'examity_client_cron_api_provision_' . $blog_id );
-            $schedule = time() + $interval;
-
-            if ($scheduled != NULL && ($scheduled > $schedule)) {
-                if (wp_next_scheduled ( 'examity_client_cron_api_provision_' . $blog_id )) {
-                    wp_clear_scheduled_hook('examity_client_cron_api_provision_' . $blog_id );
-                }
-            }
-
-            if ($interval != NULL && $scheduled == NULL) {
-                // Schedules the provisioning task to run.
-                wp_schedule_single_event(time() + $interval, 'examity_client_cron_api_provision_' . $blog_id);
-            }
+        if ($interval != NULL && $scheduled == NULL) {
+            // Schedules the provisioning task to run.
+            wp_schedule_single_event(time() + $interval, 'examity_client_cron_api_provision');
         }
     }
 
     public function api_provision_batch() {
 
         // Provisions all relevant objects found within all courses.
-
-        $blog_id = get_current_blog_id();
-
-        if ($blog_id  != NULL) {
 
             $courses_args = array(
                 'post_type'   => 'sfwd-courses',
@@ -894,7 +869,7 @@ class Examity_Client {
                             if (count($users) > 0) {
 
                                 // Make sure the associated course exists.
-                                $this->api_course_create($blog_id, $course_object, $ldCourseId);
+                                $this->api_course_create($course_object, $ldCourseId);
 
                                 // Perform provisioning for each quiz that we find as a course step.
                                 if (count($course_steps) > 0) {
@@ -903,7 +878,7 @@ class Examity_Client {
                                         $quiz_object = get_post($course_step);
 
                                         // Add the exam.
-                                        $this->api_exam_create($blog_id, $quiz_object, $ldCourseId);
+                                        $this->api_exam_create($quiz_object, $ldCourseId);
                                     }
                                 }
 
@@ -912,7 +887,7 @@ class Examity_Client {
                                     foreach ($global_quizzes as $quiz_object) {
 
                                         // Add the exam.
-                                        $this->api_exam_create($blog_id, $quiz_object, $ldCourseId);
+                                        $this->api_exam_create($quiz_object, $ldCourseId);
                                     }
                                 }
                                 foreach ($users as $user_object) {
@@ -921,22 +896,19 @@ class Examity_Client {
                                     $this->api_user_info($course_object, $user_object);
 
                                     // Make sure the user is enrolled in the course.
-                                    $this->api_course_enroll($blog_id, get_post($ldCourseId), $user_object);
+                                    $this->api_course_enroll(get_post($ldCourseId), $user_object);
                                 }
                             }
                         }
                     }
                 }
             }
-        }
     }
 
 
     public function sso_form_shortcode() {
 
         // Provides a visible button that POSTs to the Examity SSO login form.
-
-        $blog_id = get_current_blog_id();
 
         // This may get called outside the loop.
         global $wp_query;
@@ -950,9 +922,9 @@ class Examity_Client {
         // Render Examity sign in form if the user has access to the object.
         if ($has_access) {
 
-            $sso_url = get_blog_option( $blog_id, $this->plugin_name . '_sso_url', 'http://localhost/changeme' );
-            $sso_encryption_key = get_blog_option( $blog_id, $this->plugin_name . '_sso_encryption_key', 'changeme' );
-            $sso_initialization_vector = hex2bin(get_blog_option( $blog_id, $this->plugin_name . '_sso_initialization_vector', '0000000000000000' ));
+            $sso_url = get_option( $this->plugin_name . '_sso_url', 'http://localhost/changeme' );
+            $sso_encryption_key = get_option( $this->plugin_name . '_sso_encryption_key', 'changeme' );
+            $sso_initialization_vector = hex2bin(get_option( $this->plugin_name . '_sso_initialization_vector', '0000000000000000' ));
             $payload = $this->sso_encrypt($current_user->user_email, $sso_encryption_key, $sso_initialization_vector);
             $form = '<form action="' . $sso_url . '" method="POST" name="login">
                      <input type="hidden" name="userName" value="' . $payload . '" />
@@ -1019,8 +991,6 @@ class Examity_Client {
 
         // Provides an AJAX POST to the Examity SSO login form.
 
-        $blog_id = get_current_blog_id();
-
         // This gets called outside the loop.
         global $wp_query;
         $post_object = $wp_query->post;
@@ -1034,9 +1004,9 @@ class Examity_Client {
         if (($post_object->post_type == 'sfwd-courses'
             || $post_object->post_type == 'sfwd-quiz') && $has_access) {
 
-            $sso_url = get_blog_option( $blog_id, $this->plugin_name . '_sso_url', 'http://localhost/changeme' );
-            $sso_encryption_key = get_blog_option( $blog_id, $this->plugin_name . '_sso_encryption_key', 'changeme' );
-            $sso_initialization_vector = hex2bin(get_blog_option( $blog_id, $this->plugin_name . '_sso_initialization_vector', '0000000000000000' ));
+            $sso_url = get_option( $this->plugin_name . '_sso_url', 'http://localhost/changeme' );
+            $sso_encryption_key = get_option( $this->plugin_name . '_sso_encryption_key', 'changeme' );
+            $sso_initialization_vector = hex2bin(get_option( $this->plugin_name . '_sso_initialization_vector', '0000000000000000' ));
             $payload = $this->sso_encrypt($current_user->user_email, $sso_encryption_key, $sso_initialization_vector);
 
             if ( ! wp_script_is( 'jquery', 'done' ) ) {
